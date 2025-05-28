@@ -1,12 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Edit, Trash2, Package, Search, Filter } from 'lucide-react';
+import { Plus, Package, Search, Filter } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface Product {
   id: string;
@@ -24,7 +26,7 @@ const Inventory = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -33,43 +35,32 @@ const Inventory = () => {
     stock_quantity: '',
     unit: 'قطعة'
   });
+  const { toast } = useToast();
 
-  // محاكاة البيانات - في التطبيق الحقيقي ستجلب من Supabase
   useEffect(() => {
-    const mockProducts: Product[] = [
-      {
-        id: '1',
-        name: 'فلتر هواء',
-        category: 'فلاتر',
-        purchase_price: 25,
-        selling_price: 35,
-        stock_quantity: 50,
-        unit: 'قطعة',
-        created_at: '2024-01-15'
-      },
-      {
-        id: '2',
-        name: 'بطارية سيارة 70 أمبير',
-        category: 'بطاريات',
-        purchase_price: 200,
-        selling_price: 280,
-        stock_quantity: 15,
-        unit: 'قطعة',
-        created_at: '2024-01-10'
-      },
-      {
-        id: '3',
-        name: 'زيت محرك 5W30',
-        category: 'زيوت',
-        purchase_price: 45,
-        selling_price: 65,
-        stock_quantity: 30,
-        unit: 'علبة',
-        created_at: '2024-01-12'
-      }
-    ];
-    setProducts(mockProducts);
+    fetchProducts();
   }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء جلب بيانات المخزون",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const categories = [...new Set(products.map(p => p.category))];
 
@@ -87,68 +78,52 @@ const Inventory = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingProduct) {
-      // تحديث المنتج
-      setProducts(products.map(p => 
-        p.id === editingProduct.id 
-          ? {
-              ...p,
-              name: formData.name,
-              category: formData.category,
-              purchase_price: parseFloat(formData.purchase_price),
-              selling_price: parseFloat(formData.selling_price),
-              stock_quantity: parseInt(formData.stock_quantity),
-              unit: formData.unit
-            }
-          : p
-      ));
-      setEditingProduct(null);
-    } else {
-      // إضافة منتج جديد
-      const newProduct: Product = {
-        id: Date.now().toString(),
-        name: formData.name,
-        category: formData.category,
-        purchase_price: parseFloat(formData.purchase_price),
-        selling_price: parseFloat(formData.selling_price),
-        stock_quantity: parseInt(formData.stock_quantity),
-        unit: formData.unit,
-        created_at: new Date().toISOString()
-      };
-      setProducts([...products, newProduct]);
-    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('المستخدم غير مسجل الدخول');
 
-    // إعادة تعيين النموذج
-    setFormData({
-      name: '',
-      category: '',
-      purchase_price: '',
-      selling_price: '',
-      stock_quantity: '',
-      unit: 'قطعة'
-    });
-    setIsAddModalOpen(false);
-  };
+      const { error } = await supabase
+        .from('products')
+        .insert({
+          name: formData.name,
+          category: formData.category,
+          purchase_price: parseFloat(formData.purchase_price),
+          selling_price: parseFloat(formData.selling_price),
+          stock_quantity: parseInt(formData.stock_quantity),
+          unit: formData.unit,
+          user_id: user.id
+        });
 
-  const handleEdit = (product: Product) => {
-    setEditingProduct(product);
-    setFormData({
-      name: product.name,
-      category: product.category,
-      purchase_price: product.purchase_price.toString(),
-      selling_price: product.selling_price.toString(),
-      stock_quantity: product.stock_quantity.toString(),
-      unit: product.unit
-    });
-    setIsAddModalOpen(true);
-  };
+      if (error) throw error;
 
-  const handleDelete = (id: string) => {
-    if (confirm('هل أنت متأكد من حذف هذا الصنف؟')) {
-      setProducts(products.filter(p => p.id !== id));
+      toast({
+        title: "تم الحفظ",
+        description: "تم إضافة الصنف بنجاح",
+      });
+
+      // إعادة تعيين النموذج وإغلاق النافذة
+      setFormData({
+        name: '',
+        category: '',
+        purchase_price: '',
+        selling_price: '',
+        stock_quantity: '',
+        unit: 'قطعة'
+      });
+      setIsAddModalOpen(false);
+      
+      // إعادة جلب البيانات
+      fetchProducts();
+    } catch (error) {
+      console.error('Error adding product:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إضافة الصنف",
+        variant: "destructive",
+      });
     }
   };
 
@@ -178,7 +153,7 @@ const Inventory = () => {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="purchase_price">سعر الشراء</Label>
           <Input
@@ -186,6 +161,7 @@ const Inventory = () => {
             name="purchase_price"
             type="number"
             step="0.01"
+            min="0"
             value={formData.purchase_price}
             onChange={handleInputChange}
             placeholder="0.00"
@@ -200,6 +176,7 @@ const Inventory = () => {
             name="selling_price"
             type="number"
             step="0.01"
+            min="0"
             value={formData.selling_price}
             onChange={handleInputChange}
             placeholder="0.00"
@@ -208,13 +185,14 @@ const Inventory = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="stock_quantity">الكمية</Label>
           <Input
             id="stock_quantity"
             name="stock_quantity"
             type="number"
+            min="0"
             value={formData.stock_quantity}
             onChange={handleInputChange}
             placeholder="0"
@@ -236,36 +214,35 @@ const Inventory = () => {
       </div>
 
       <Button type="submit" className="w-full">
-        {editingProduct ? 'تحديث الصنف' : 'إضافة الصنف'}
+        إضافة الصنف
       </Button>
     </form>
   );
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center" dir="rtl">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">جارٍ التحميل...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50" dir="rtl">
-      {/* شريط التنقل */}
-      <nav className="bg-white shadow-lg border-b-2 border-purple-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to="/" className="text-xl font-bold text-gray-800 hover:text-purple-600 transition-colors">
-              ← العودة للرئيسية
-            </Link>
-            <h1 className="text-xl font-bold text-purple-800">إدارة المخزون</h1>
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* أدوات البحث والتصفية */}
-        <Card className="mb-8">
+        <Card className="mb-6 sm:mb-8">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-6 w-6 text-purple-600" />
-              إدارة الأصناف
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Package className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+              إدارة المخزون
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:gap-4 mb-6">
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -278,11 +255,11 @@ const Inventory = () => {
                 </div>
               </div>
               
-              <div className="sm:w-48">
+              <div className="w-full sm:w-48">
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                 >
                   <option value="">كل الفئات</option>
                   {categories.map(category => (
@@ -294,9 +271,8 @@ const Inventory = () => {
               <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
                 <DialogTrigger asChild>
                   <Button 
-                    className="bg-purple-600 hover:bg-purple-700"
+                    className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto"
                     onClick={() => {
-                      setEditingProduct(null);
                       setFormData({
                         name: '',
                         category: '',
@@ -311,11 +287,9 @@ const Inventory = () => {
                     إضافة صنف جديد
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md mx-4 sm:mx-auto">
                   <DialogHeader>
-                    <DialogTitle>
-                      {editingProduct ? 'تعديل الصنف' : 'إضافة صنف جديد'}
-                    </DialogTitle>
+                    <DialogTitle>إضافة صنف جديد</DialogTitle>
                   </DialogHeader>
                   <ProductForm />
                 </DialogContent>
@@ -328,30 +302,29 @@ const Inventory = () => {
         <Card>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[600px]">
                 <thead className="bg-purple-50">
                   <tr>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-purple-800">اسم الصنف</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-purple-800">الفئة</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-purple-800">سعر الشراء</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-purple-800">سعر البيع</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-purple-800">الكمية المتوفرة</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-purple-800">الوحدة</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-purple-800">العمليات</th>
+                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-right text-xs sm:text-sm font-semibold text-purple-800">اسم الصنف</th>
+                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-right text-xs sm:text-sm font-semibold text-purple-800">الفئة</th>
+                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-right text-xs sm:text-sm font-semibold text-purple-800">سعر الشراء</th>
+                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-right text-xs sm:text-sm font-semibold text-purple-800">سعر البيع</th>
+                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-right text-xs sm:text-sm font-semibold text-purple-800">الكمية</th>
+                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-right text-xs sm:text-sm font-semibold text-purple-800">الوحدة</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredProducts.map((product) => (
                     <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{product.name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-900">{product.name}</td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">
                         <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">
                           {product.category}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{product.purchase_price.toFixed(2)} ر.س</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{product.selling_price.toFixed(2)} ر.س</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{product.purchase_price.toFixed(2)} ر.س</td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{product.selling_price.toFixed(2)} ر.س</td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">
                         <span className={`px-2 py-1 rounded-full text-xs ${
                           product.stock_quantity < 10 
                             ? 'bg-red-100 text-red-800' 
@@ -362,27 +335,7 @@ const Inventory = () => {
                           {product.stock_quantity}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{product.unit}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(product)}
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(product.id)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{product.unit}</td>
                     </tr>
                   ))}
                 </tbody>
