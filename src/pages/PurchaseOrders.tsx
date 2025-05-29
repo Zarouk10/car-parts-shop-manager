@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, ShoppingCart, Edit2, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,10 @@ interface PurchaseOrder {
   item_name: string;
   quantity: number;
   notes: string | null;
+  purchase_price?: number;
+  selling_price?: number;
+  is_purchased: boolean;
+  purchase_date?: string;
   created_at: string;
 }
 
@@ -27,7 +32,9 @@ const PurchaseOrders = () => {
   const [formData, setFormData] = useState({
     item_name: '',
     quantity: '1',
-    notes: ''
+    notes: '',
+    purchase_price: '',
+    selling_price: ''
   });
   const { toast } = useToast();
 
@@ -78,7 +85,9 @@ const PurchaseOrders = () => {
           .update({
             item_name: formData.item_name,
             quantity: parseInt(formData.quantity),
-            notes: formData.notes || null
+            notes: formData.notes || null,
+            purchase_price: parseFloat(formData.purchase_price) || 0,
+            selling_price: parseFloat(formData.selling_price) || 0
           })
           .eq('id', editingOrder.id);
 
@@ -96,6 +105,9 @@ const PurchaseOrders = () => {
             item_name: formData.item_name,
             quantity: parseInt(formData.quantity),
             notes: formData.notes || null,
+            purchase_price: parseFloat(formData.purchase_price) || 0,
+            selling_price: parseFloat(formData.selling_price) || 0,
+            is_purchased: false,
             user_id: user.id
           });
 
@@ -108,7 +120,7 @@ const PurchaseOrders = () => {
       }
 
       // إعادة تعيين النموذج
-      setFormData({ item_name: '', quantity: '1', notes: '' });
+      setFormData({ item_name: '', quantity: '1', notes: '', purchase_price: '', selling_price: '' });
       setEditingOrder(null);
       setIsModalOpen(false);
       
@@ -131,7 +143,9 @@ const PurchaseOrders = () => {
     setFormData({
       item_name: order.item_name,
       quantity: order.quantity.toString(),
-      notes: order.notes || ''
+      notes: order.notes || '',
+      purchase_price: order.purchase_price?.toString() || '',
+      selling_price: order.selling_price?.toString() || ''
     });
     setIsModalOpen(true);
   };
@@ -164,12 +178,21 @@ const PurchaseOrders = () => {
   };
 
   const resetForm = () => {
-    setFormData({ item_name: '', quantity: '1', notes: '' });
+    setFormData({ item_name: '', quantity: '1', notes: '', purchase_price: '', selling_price: '' });
     setEditingOrder(null);
     setIsModalOpen(false);
   };
 
   const handleMarkAsPurchased = async (order: PurchaseOrder) => {
+    if (order.is_purchased) {
+      toast({
+        title: "تنبيه",
+        description: "هذا العنصر تم شراؤه بالفعل",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!confirm('هل تريد نقل هذا العنصر إلى المخزون؟')) return;
 
     try {
@@ -182,8 +205,8 @@ const PurchaseOrders = () => {
         .insert({
           name: order.item_name,
           category: 'عام', // فئة افتراضية
-          purchase_price: 0, // يمكن تعديلها لاحقاً
-          selling_price: 0, // يمكن تعديلها لاحقاً
+          purchase_price: order.purchase_price || 0,
+          selling_price: order.selling_price || 0,
           stock_quantity: order.quantity,
           unit: 'قطعة',
           user_id: user.id
@@ -191,17 +214,20 @@ const PurchaseOrders = () => {
 
       if (insertError) throw insertError;
 
-      // حذف العنصر من قائمة التسوق
-      const { error: deleteError } = await supabase
+      // تحديث العنصر في قائمة التسوق لتسجيل تاريخ الشراء
+      const { error: updateError } = await supabase
         .from('purchase_orders')
-        .delete()
+        .update({
+          is_purchased: true,
+          purchase_date: new Date().toISOString()
+        })
         .eq('id', order.id);
 
-      if (deleteError) throw deleteError;
+      if (updateError) throw updateError;
 
       toast({
         title: "تم النقل بنجاح",
-        description: "تم نقل العنصر إلى المخزون",
+        description: "تم نقل العنصر إلى المخزون مع الاحتفاظ بسجل الشراء",
       });
 
       fetchOrders();
@@ -224,7 +250,7 @@ const PurchaseOrders = () => {
         </div>
       </div>
     );
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4 sm:p-6 lg:p-8" dir="rtl">
@@ -237,7 +263,7 @@ const PurchaseOrders = () => {
               قائمة التسوق
             </CardTitle>
             <p className="text-xs sm:text-sm text-gray-600 mt-2 leading-relaxed">
-              استخدم هذه الصفحة لتدوين الأصناف التي تحتاج لشرائها من السوق. اضغط على علامة ✓ عند الشراء لنقلها إلى المخزون
+              استخدم هذه الصفحة لتدوين الأصناف التي تحتاج لشرائها من السوق. اضغط على علامة ✓ عند الشراء لنقلها إلى المخزون مع الاحتفاظ بسجل الشراء
             </p>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0">
@@ -289,6 +315,40 @@ const PurchaseOrders = () => {
                     />
                   </div>
 
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="purchase_price" className="text-sm sm:text-base font-medium">سعر الشراء</Label>
+                      <Input
+                        id="purchase_price"
+                        name="purchase_price"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.purchase_price}
+                        onChange={handleInputChange}
+                        placeholder="0.00"
+                        className="w-full text-sm sm:text-base p-3 border-2 rounded-lg focus:border-blue-500"
+                        dir="rtl"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="selling_price" className="text-sm sm:text-base font-medium">سعر البيع</Label>
+                      <Input
+                        id="selling_price"
+                        name="selling_price"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.selling_price}
+                        onChange={handleInputChange}
+                        placeholder="0.00"
+                        className="w-full text-sm sm:text-base p-3 border-2 rounded-lg focus:border-blue-500"
+                        dir="rtl"
+                      />
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="notes" className="text-sm sm:text-base font-medium">ملاحظات (اختيارية)</Label>
                     <Textarea
@@ -329,20 +389,40 @@ const PurchaseOrders = () => {
         {/* قائمة الأصناف */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {orders.map((order) => (
-            <Card key={order.id} className="hover:shadow-lg transition-all duration-200 border border-gray-200">
+            <Card key={order.id} className={`hover:shadow-lg transition-all duration-200 border ${order.is_purchased ? 'border-green-200 bg-green-50' : 'border-gray-200'}`}>
               <CardContent className="p-4 sm:p-5">
                 <div className="flex justify-between items-start mb-3 sm:mb-4">
                   <h3 className="font-semibold text-gray-900 text-base sm:text-lg leading-tight flex-1 ml-2">
                     {order.item_name}
+                    {order.is_purchased && (
+                      <span className="text-green-600 text-xs mr-2">✓ تم الشراء</span>
+                    )}
                   </h3>
                   <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap">
                     {order.quantity}
                   </span>
                 </div>
+
+                {(order.purchase_price || order.selling_price) && (
+                  <div className="mb-3 text-xs sm:text-sm text-gray-600">
+                    {order.purchase_price && (
+                      <div>سعر الشراء: {order.purchase_price} ر.س</div>
+                    )}
+                    {order.selling_price && (
+                      <div>سعر البيع: {order.selling_price} ر.س</div>
+                    )}
+                  </div>
+                )}
                 
                 {order.notes && (
                   <p className="text-gray-600 text-xs sm:text-sm mb-4 leading-relaxed bg-gray-50 p-2 rounded">
                     {order.notes}
+                  </p>
+                )}
+
+                {order.is_purchased && order.purchase_date && (
+                  <p className="text-green-600 text-xs mb-3">
+                    تاريخ الشراء: {new Date(order.purchase_date).toLocaleDateString('ar-SA')}
                   </p>
                 )}
                 
@@ -352,14 +432,16 @@ const PurchaseOrders = () => {
                   </span>
                   
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => handleMarkAsPurchased(order)}
-                      className="bg-green-600 hover:bg-green-700 text-white p-2 h-8 w-8"
-                      title="تم الشراء - نقل إلى المخزون"
-                    >
-                      <Check className="h-3 w-3" />
-                    </Button>
+                    {!order.is_purchased && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleMarkAsPurchased(order)}
+                        className="bg-green-600 hover:bg-green-700 text-white p-2 h-8 w-8"
+                        title="تم الشراء - نقل إلى المخزون"
+                      >
+                        <Check className="h-3 w-3" />
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
