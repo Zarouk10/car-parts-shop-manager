@@ -1,93 +1,128 @@
 
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, LogOut, User, BarChart3, Package, ShoppingCart, TrendingUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { LogOut, Package, ShoppingCart, TrendingUp, BarChart3 } from 'lucide-react';
 
 const Navbar = () => {
+  const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
+      navigate('/');
       toast({
-        title: "تم تسجيل الخروج",
-        description: "تم تسجيل خروجك بنجاح",
+        title: "تم تسجيل الخروج بنجاح",
+        description: "شكراً لاستخدامك نظام إدارة المخزون",
       });
     } catch (error) {
       toast({
-        title: "خطأ",
+        title: "خطأ في تسجيل الخروج",
         description: "حدث خطأ أثناء تسجيل الخروج",
         variant: "destructive",
       });
     }
   };
 
-  const isActive = (path: string) => location.pathname === path;
+  const navItems = [
+    { name: 'الرئيسية', path: '/', icon: BarChart3 },
+    { name: 'وصل الطلبات', path: '/purchase-orders', icon: ShoppingCart },
+    { name: 'المبيعات اليومية', path: '/daily-sales', icon: TrendingUp },
+    { name: 'المخزون', path: '/inventory', icon: Package },
+    { name: 'التحليلات', path: '/analysis', icon: BarChart3 },
+  ];
 
   return (
-    <nav className="bg-white shadow-lg border-b-2 border-blue-100" dir="rtl">
+    <nav className="bg-white shadow-lg sticky top-0 z-50" dir="rtl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-reverse space-x-8">
-            <h1 className="text-xl font-bold text-gray-800">إدارة محل إكسسوارات السيارات</h1>
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <h1 className="text-xl font-bold text-green-600">نظام إدارة المخزون</h1>
+            </div>
           </div>
-          
-          <div className="flex items-center space-x-reverse space-x-4">
-            <Link to="/">
-              <Button
-                variant={isActive('/') ? 'default' : 'ghost'}
-                className="flex items-center space-x-reverse space-x-2"
-              >
-                <BarChart3 className="h-4 w-4" />
-                <span>الرئيسية</span>
-              </Button>
-            </Link>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-reverse space-x-8">
+            {navItems.map((item) => {
+              const IconComponent = item.icon;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    location.pathname === item.path
+                      ? 'bg-green-100 text-green-700'
+                      : 'text-gray-600 hover:text-green-600 hover:bg-green-50'
+                  }`}
+                >
+                  <IconComponent className="h-4 w-4" />
+                  {item.name}
+                </Link>
+              );
+            })}
             
-            <Link to="/purchase-orders">
-              <Button
-                variant={isActive('/purchase-orders') ? 'default' : 'ghost'}
-                className="flex items-center space-x-reverse space-x-2"
-              >
-                <ShoppingCart className="h-4 w-4" />
-                <span>وصل الطلبات</span>
-              </Button>
-            </Link>
-            
-            <Link to="/daily-sales">
-              <Button
-                variant={isActive('/daily-sales') ? 'default' : 'ghost'}
-                className="flex items-center space-x-reverse space-x-2"
-              >
-                <TrendingUp className="h-4 w-4" />
-                <span>البيع اليومي</span>
-              </Button>
-            </Link>
-            
-            <Link to="/inventory">
-              <Button
-                variant={isActive('/inventory') ? 'default' : 'ghost'}
-                className="flex items-center space-x-reverse space-x-2"
-              >
-                <Package className="h-4 w-4" />
-                <span>المخزون</span>
-              </Button>
-            </Link>
-            
-            <Button
+            <button
               onClick={handleLogout}
-              variant="outline"
-              className="flex items-center space-x-reverse space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+              className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
             >
               <LogOut className="h-4 w-4" />
-              <span>تسجيل الخروج</span>
-            </Button>
+              تسجيل الخروج
+            </button>
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-green-600 hover:bg-green-50"
+            >
+              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Mobile Navigation */}
+      {isOpen && (
+        <div className="md:hidden">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
+            {navItems.map((item) => {
+              const IconComponent = item.icon;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                    location.pathname === item.path
+                      ? 'bg-green-100 text-green-700'
+                      : 'text-gray-600 hover:text-green-600 hover:bg-green-50'
+                  }`}
+                >
+                  <IconComponent className="h-5 w-5" />
+                  {item.name}
+                </Link>
+              );
+            })}
+            
+            <button
+              onClick={() => {
+                handleLogout();
+                setIsOpen(false);
+              }}
+              className="flex items-center gap-2 w-full text-right px-3 py-2 rounded-md text-base font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
+            >
+              <LogOut className="h-5 w-5" />
+              تسجيل الخروج
+            </button>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
