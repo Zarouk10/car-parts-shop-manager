@@ -1,12 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, ShoppingCart, Edit2 } from 'lucide-react';
+import { Plus, Trash2, ShoppingCart, Edit2, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -169,6 +169,52 @@ const PurchaseOrders = () => {
     setIsModalOpen(false);
   };
 
+  const handleMarkAsPurchased = async (order: PurchaseOrder) => {
+    if (!confirm('هل تريد نقل هذا العنصر إلى المخزون؟')) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('المستخدم غير مسجل الدخول');
+
+      // إضافة العنصر إلى المخزون
+      const { error: insertError } = await supabase
+        .from('products')
+        .insert({
+          name: order.item_name,
+          category: 'عام', // فئة افتراضية
+          purchase_price: 0, // يمكن تعديلها لاحقاً
+          selling_price: 0, // يمكن تعديلها لاحقاً
+          stock_quantity: order.quantity,
+          unit: 'قطعة',
+          user_id: user.id
+        });
+
+      if (insertError) throw insertError;
+
+      // حذف العنصر من قائمة التسوق
+      const { error: deleteError } = await supabase
+        .from('purchase_orders')
+        .delete()
+        .eq('id', order.id);
+
+      if (deleteError) throw deleteError;
+
+      toast({
+        title: "تم النقل بنجاح",
+        description: "تم نقل العنصر إلى المخزون",
+      });
+
+      fetchOrders();
+    } catch (error) {
+      console.error('Error marking as purchased:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء نقل العنصر إلى المخزون",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4" dir="rtl">
@@ -191,7 +237,7 @@ const PurchaseOrders = () => {
               قائمة التسوق
             </CardTitle>
             <p className="text-xs sm:text-sm text-gray-600 mt-2 leading-relaxed">
-              استخدم هذه الصفحة لتدوين الأصناف التي تحتاج لشرائها من السوق
+              استخدم هذه الصفحة لتدوين الأصناف التي تحتاج لشرائها من السوق. اضغط على علامة ✓ عند الشراء لنقلها إلى المخزون
             </p>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0">
@@ -306,6 +352,14 @@ const PurchaseOrders = () => {
                   </span>
                   
                   <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => handleMarkAsPurchased(order)}
+                      className="bg-green-600 hover:bg-green-700 text-white p-2 h-8 w-8"
+                      title="تم الشراء - نقل إلى المخزون"
+                    >
+                      <Check className="h-3 w-3" />
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
