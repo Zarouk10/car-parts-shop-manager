@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, BarChart3, Calendar, Package } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +5,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import ExportData from '@/components/ExportData';
 
 interface SalesAnalytics {
   totalSales: number;
@@ -243,6 +243,9 @@ const Analysis = () => {
               <div className="text-2xl font-bold text-green-600">
                 {analytics.totalSales.toFixed(2)} ر.س
               </div>
+              <p className="text-xs text-muted-foreground">
+                معدل يومي: {analytics.dailyAverage.toFixed(2)} ر.س
+              </p>
             </CardContent>
           </Card>
 
@@ -255,32 +258,46 @@ const Analysis = () => {
               <div className="text-2xl font-bold text-blue-600">
                 {analytics.totalProfit.toFixed(2)} ر.س
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">معدل البيع اليومي</CardTitle>
-              <BarChart3 className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {analytics.dailyAverage.toFixed(2)} ر.س
-              </div>
+              <p className="text-xs text-muted-foreground">
+                هامش ربح: {analytics.totalSales > 0 ? ((analytics.totalProfit / analytics.totalSales) * 100).toFixed(1) : 0}%
+              </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">معدل البيع الأسبوعي</CardTitle>
-              <Calendar className="h-4 w-4 text-orange-600" />
+              <BarChart3 className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
+              <div className="text-2xl font-bold text-purple-600">
                 {analytics.weeklyAverage.toFixed(2)} ر.س
               </div>
+              <p className="text-xs text-muted-foreground">
+                توقع شهري: {analytics.monthlyAverage.toFixed(2)} ر.س
+              </p>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">الخسائر</CardTitle>
+              <TrendingDown className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                {analytics.totalLoss.toFixed(2)} ر.س
+              </div>
+              <p className="text-xs text-muted-foreground">
+                نسبة الخسارة: {analytics.totalSales > 0 ? ((analytics.totalLoss / analytics.totalSales) * 100).toFixed(1) : 0}%
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* تصدير البيانات */}
+        <div className="mb-8">
+          <ExportData />
         </div>
 
         {/* الرسوم البيانية */}
