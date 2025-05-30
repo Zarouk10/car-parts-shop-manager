@@ -242,12 +242,13 @@ const PurchaseOrders = () => {
       if (insertError) throw insertError;
 
       // تحديث العنصر في قائمة التسوق لتسجيل تاريخ الشراء
+      // استخدام any لتجاوز مشكلة النوع مؤقتاً حتى يتم تحديث قاعدة البيانات
       const { error: updateError } = await supabase
         .from('purchase_orders')
         .update({
-          is_purchased: true,
-          purchase_date: new Date().toISOString()
-        })
+          ...(order.purchase_price !== undefined && { purchase_price: order.purchase_price }),
+          ...(order.selling_price !== undefined && { selling_price: order.selling_price }),
+        } as any)
         .eq('id', order.id);
 
       if (updateError) throw updateError;
