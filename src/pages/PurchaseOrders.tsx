@@ -18,9 +18,10 @@ interface PurchaseOrder {
   notes: string | null;
   purchase_price?: number;
   selling_price?: number;
-  is_purchased: boolean;
+  is_purchased?: boolean;
   purchase_date?: string;
   created_at: string;
+  user_id: string;
 }
 
 const PurchaseOrders = () => {
@@ -50,7 +51,17 @@ const PurchaseOrders = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setOrders(data || []);
+      
+      // إضافة القيم الافتراضية للحقول المفقودة
+      const ordersWithDefaults = (data || []).map(order => ({
+        ...order,
+        purchase_price: order.purchase_price || 0,
+        selling_price: order.selling_price || 0,
+        is_purchased: order.is_purchased || false,
+        purchase_date: order.purchase_date || null
+      }));
+      
+      setOrders(ordersWithDefaults);
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast({
@@ -107,7 +118,6 @@ const PurchaseOrders = () => {
             notes: formData.notes || null,
             purchase_price: parseFloat(formData.purchase_price) || 0,
             selling_price: parseFloat(formData.selling_price) || 0,
-            is_purchased: false,
             user_id: user.id
           });
 
