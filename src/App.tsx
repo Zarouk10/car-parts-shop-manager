@@ -11,6 +11,7 @@ import PurchaseOrders from "./pages/PurchaseOrders";
 import DailySales from "./pages/DailySales";
 import Inventory from "./pages/Inventory";
 import Analysis from "./pages/Analysis";
+import SalesHistory from "./pages/SalesHistory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,13 @@ const App = () => (
             <ProtectedRoute>
               <Layout>
                 <Analysis />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/sales-history" element={
+            <ProtectedRoute>
+              <Layout>
+                <SalesHistory />
               </Layout>
             </ProtectedRoute>
           } />

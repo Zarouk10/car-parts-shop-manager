@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, LogOut, User, BarChart3, Package, ShoppingCart, TrendingUp } from 'lucide-react';
+import { Menu, X, LogOut, User, BarChart3, Package, ShoppingCart, TrendingUp, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -34,6 +34,7 @@ const Navbar = () => {
     { name: 'المبيعات اليومية', path: '/daily-sales', icon: TrendingUp },
     { name: 'المخزون', path: '/inventory', icon: Package },
     { name: 'التحليلات', path: '/analysis', icon: BarChart3 },
+    { name: 'سجل المبيعات', path: '/sales-history', icon: FileText },
   ];
 
   return (
