@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, ShoppingCart, Edit2, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface PurchaseOrder {
+  id: string;
+  item_name: string;
+  quantity: number;
+  notes: string | null;
+  purchase_price: number;
+  selling_price: number;
+  is_purchased: boolean;
+  purchase_date: string | null;
+  created_at: string;
+  user_id: string;
+}
+
+interface DatabasePurchaseOrder {
   id: string;
   item_name: string;
   quantity: number;
@@ -52,13 +64,18 @@ const PurchaseOrders = () => {
 
       if (error) throw error;
       
-      // إضافة القيم الافتراضية للحقول المفقودة
-      const ordersWithDefaults = (data || []).map(order => ({
-        ...order,
+      // تحويل البيانات من قاعدة البيانات إلى النوع المطلوب مع القيم الافتراضية
+      const ordersWithDefaults: PurchaseOrder[] = (data as DatabasePurchaseOrder[] || []).map(order => ({
+        id: order.id,
+        item_name: order.item_name,
+        quantity: order.quantity,
+        notes: order.notes,
         purchase_price: order.purchase_price || 0,
         selling_price: order.selling_price || 0,
         is_purchased: order.is_purchased || false,
-        purchase_date: order.purchase_date || null
+        purchase_date: order.purchase_date || null,
+        created_at: order.created_at,
+        user_id: order.user_id
       }));
       
       setOrders(ordersWithDefaults);
