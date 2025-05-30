@@ -23,19 +23,6 @@ interface PurchaseOrder {
   user_id: string;
 }
 
-interface DatabasePurchaseOrder {
-  id: string;
-  item_name: string;
-  quantity: number;
-  notes: string | null;
-  purchase_price?: number;
-  selling_price?: number;
-  is_purchased?: boolean;
-  purchase_date?: string;
-  created_at: string;
-  user_id: string;
-}
-
 const PurchaseOrders = () => {
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,7 +52,7 @@ const PurchaseOrders = () => {
       if (error) throw error;
       
       // تحويل البيانات من قاعدة البيانات إلى النوع المطلوب مع القيم الافتراضية
-      const ordersWithDefaults: PurchaseOrder[] = (data as DatabasePurchaseOrder[] || []).map(order => ({
+      const ordersWithDefaults: PurchaseOrder[] = (data || []).map(order => ({
         id: order.id,
         item_name: order.item_name,
         quantity: order.quantity,
@@ -242,13 +229,12 @@ const PurchaseOrders = () => {
       if (insertError) throw insertError;
 
       // تحديث العنصر في قائمة التسوق لتسجيل تاريخ الشراء
-      // استخدام any لتجاوز مشكلة النوع مؤقتاً حتى يتم تحديث قاعدة البيانات
       const { error: updateError } = await supabase
         .from('purchase_orders')
         .update({
-          ...(order.purchase_price !== undefined && { purchase_price: order.purchase_price }),
-          ...(order.selling_price !== undefined && { selling_price: order.selling_price }),
-        } as any)
+          is_purchased: true,
+          purchase_date: new Date().toISOString()
+        })
         .eq('id', order.id);
 
       if (updateError) throw updateError;
