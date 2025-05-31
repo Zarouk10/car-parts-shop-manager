@@ -130,7 +130,7 @@ const Analysis = () => {
         // تحويل البيانات إلى مصفوفات
         const dailySales = Array.from(dailySalesMap.entries())
           .map(([date, data]: [string, any]) => ({
-            date: new Date(date).toLocaleDateString('ar', { month: 'short', day: 'numeric' }),
+            date: new Date(date).toLocaleDateString('ar-IQ', { month: 'short', day: 'numeric' }),
             sales: data.sales,
             profit: data.profit
           }))
@@ -191,7 +191,7 @@ const Analysis = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4" dir="rtl">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">جارٍ تحميل التحليلات...</p>
@@ -201,16 +201,16 @@ const Analysis = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50" dir="rtl">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-        <div className="flex justify-between items-center mb-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 pb-safe" dir="rtl">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-6 lg:py-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">تحليل المبيعات والأرباح</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">تحليل المبيعات والأرباح</h1>
             <p className="text-gray-600 mt-2">تحليل شامل لأداء المبيعات والأرباح</p>
           </div>
           
           <Select value={timeRange} onValueChange={(value: '7d' | '30d' | '90d') => setTimeRange(value)}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="اختر الفترة الزمنية" />
             </SelectTrigger>
             <SelectContent>
@@ -222,14 +222,14 @@ const Analysis = () => {
         </div>
 
         {/* البطاقات الإحصائية */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">إجمالي الإيرادات</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{formatCurrencySimple(data.totalRevenue)}</div>
+              <div className="text-lg sm:text-2xl font-bold text-green-600">{formatCurrencySimple(data.totalRevenue)}</div>
               <p className="text-xs text-muted-foreground">
                 للفترة المحددة
               </p>
@@ -242,7 +242,7 @@ const Analysis = () => {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{formatCurrencySimple(data.totalProfit)}</div>
+              <div className="text-lg sm:text-2xl font-bold text-blue-600">{formatCurrencySimple(data.totalProfit)}</div>
               <p className="text-xs text-muted-foreground">
                 هامش ربح {data.totalRevenue > 0 ? ((data.totalProfit / data.totalRevenue) * 100).toFixed(1) : 0}%
               </p>
@@ -255,7 +255,7 @@ const Analysis = () => {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{data.totalOrders}</div>
+              <div className="text-xl sm:text-2xl font-bold">{data.totalOrders}</div>
               <p className="text-xs text-muted-foreground">
                 إجمالي عمليات البيع
               </p>
@@ -268,7 +268,7 @@ const Analysis = () => {
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrencySimple(data.averageOrderValue)}</div>
+              <div className="text-lg sm:text-2xl font-bold">{formatCurrencySimple(data.averageOrderValue)}</div>
               <p className="text-xs text-muted-foreground">
                 متوسط قيمة البيع الواحد
               </p>
@@ -276,19 +276,26 @@ const Analysis = () => {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* رسم المبيعات والأرباح اليومية */}
           <Card>
             <CardHeader>
-              <CardTitle>المبيعات والأرباح اليومية</CardTitle>
+              <CardTitle className="text-base sm:text-lg">المبيعات والأرباح اليومية</CardTitle>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={chartConfig} className="h-[300px]">
+              <ChartContainer config={chartConfig} className="h-[250px] sm:h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data.dailySales}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
+                    <XAxis 
+                      dataKey="date" 
+                      fontSize={12}
+                      tick={{ fontSize: 10 }}
+                    />
+                    <YAxis 
+                      fontSize={12}
+                      tick={{ fontSize: 10 }}
+                    />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar dataKey="sales" fill="var(--color-sales)" name="المبيعات" />
                     <Bar dataKey="profit" fill="var(--color-profit)" name="الأرباح" />
@@ -301,10 +308,10 @@ const Analysis = () => {
           {/* أداء الفئات */}
           <Card>
             <CardHeader>
-              <CardTitle>أداء الفئات</CardTitle>
+              <CardTitle className="text-base sm:text-lg">أداء الفئات</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px] flex items-center justify-center">
+              <div className="h-[250px] sm:h-[300px] flex items-center justify-center">
                 {data.categoryPerformance.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -314,9 +321,10 @@ const Analysis = () => {
                         cy="50%"
                         labelLine={false}
                         label={({ category, percent }) => `${category} (${(percent * 100).toFixed(0)}%)`}
-                        outerRadius={80}
+                        outerRadius={60}
                         fill="#8884d8"
                         dataKey="sales"
+                        fontSize={10}
                       >
                         {data.categoryPerformance.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -334,37 +342,39 @@ const Analysis = () => {
         </div>
 
         {/* أفضل المنتجات مبيعاً */}
-        <Card className="mb-8">
+        <Card className="mb-6 sm:mb-8">
           <CardHeader>
-            <CardTitle>أفضل المنتجات مبيعاً</CardTitle>
+            <CardTitle className="text-base sm:text-lg">أفضل المنتجات مبيعاً</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-blue-50">
-                    <th className="p-3 border border-gray-300 text-right font-semibold text-blue-800">المنتج</th>
-                    <th className="p-3 border border-gray-300 text-right font-semibold text-blue-800">الكمية المباعة</th>
-                    <th className="p-3 border border-gray-300 text-right font-semibold text-blue-800">إجمالي الإيرادات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.topProducts.map((product, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="p-3 border border-gray-300 font-medium">{product.name}</td>
-                      <td className="p-3 border border-gray-300 text-center">{product.quantity}</td>
-                      <td className="p-3 border border-gray-300 text-center font-semibold text-green-600">
-                        {formatCurrencySimple(product.revenue)}
-                      </td>
+            <div className="overflow-x-auto -mx-2 sm:mx-0">
+              <div className="min-w-full inline-block align-middle">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-blue-50">
+                      <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-blue-800 text-sm">المنتج</th>
+                      <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-blue-800 text-sm">الكمية</th>
+                      <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-blue-800 text-sm">الإيرادات</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              {data.topProducts.length === 0 && (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">لا توجد بيانات مبيعات متاحة</p>
-                </div>
-              )}
+                  </thead>
+                  <tbody>
+                    {data.topProducts.map((product, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="p-2 sm:p-3 border border-gray-300 font-medium text-sm">{product.name}</td>
+                        <td className="p-2 sm:p-3 border border-gray-300 text-center text-sm">{product.quantity}</td>
+                        <td className="p-2 sm:p-3 border border-gray-300 text-center font-semibold text-green-600 text-sm">
+                          {formatCurrencySimple(product.revenue)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {data.topProducts.length === 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">لا توجد بيانات مبيعات متاحة</p>
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

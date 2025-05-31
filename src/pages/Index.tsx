@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, Package, DollarSign, AlertTriangle, ShoppingCart, BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,6 +6,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { formatCurrencySimple } from '@/lib/currency';
 import AlertBanner from '@/components/AlertBanner';
 
 interface DashboardStats {
@@ -172,7 +174,7 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center p-4" dir="rtl">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600">جارٍ تحميل لوحة التحكم...</p>
@@ -182,36 +184,38 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50" dir="rtl">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 pb-safe" dir="rtl">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-6 lg:py-8">
         {/* التنبيهات */}
-        {stats.lowStockProducts > 0 && !dismissedAlerts.includes('low-stock') && (
-          <AlertBanner
-            title="تنبيه: مخزون منخفض"
-            message={`يوجد ${stats.lowStockProducts} منتج بمخزون منخفض يحتاج إلى إعادة تموين`}
-            type="warning"
-            onDismiss={() => setDismissedAlerts(prev => [...prev, 'low-stock'])}
-          />
-        )}
+        <div className="space-y-2 mb-4 sm:mb-6">
+          {stats.lowStockProducts > 0 && !dismissedAlerts.includes('low-stock') && (
+            <AlertBanner
+              title="تنبيه: مخزون منخفض"
+              message={`يوجد ${stats.lowStockProducts} منتج بمخزون منخفض يحتاج إلى إعادة تموين`}
+              type="warning"
+              onDismiss={() => setDismissedAlerts(prev => [...prev, 'low-stock'])}
+            />
+          )}
 
-        {stats.pendingOrders > 0 && !dismissedAlerts.includes('pending-orders') && (
-          <AlertBanner
-            title="أوامر شراء معلقة"
-            message={`يوجد ${stats.pendingOrders} أمر شراء في انتظار التنفيذ`}
-            type="info"
-            onDismiss={() => setDismissedAlerts(prev => [...prev, 'pending-orders'])}
-          />
-        )}
+          {stats.pendingOrders > 0 && !dismissedAlerts.includes('pending-orders') && (
+            <AlertBanner
+              title="أوامر شراء معلقة"
+              message={`يوجد ${stats.pendingOrders} أمر شراء في انتظار التنفيذ`}
+              type="info"
+              onDismiss={() => setDismissedAlerts(prev => [...prev, 'pending-orders'])}
+            />
+          )}
+        </div>
 
         {/* البطاقات الرئيسية */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">إجمالي المنتجات</CardTitle>
               <Package className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalProducts}</div>
+              <div className="text-xl sm:text-2xl font-bold">{stats.totalProducts}</div>
               <p className="text-xs opacity-80">
                 {stats.lowStockProducts > 0 && `${stats.lowStockProducts} بمخزون منخفض`}
               </p>
@@ -224,9 +228,9 @@ const Index = () => {
               <TrendingUp className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.todaySales.toLocaleString()} دينار</div>
+              <div className="text-lg sm:text-2xl font-bold">{formatCurrencySimple(stats.todaySales)}</div>
               <p className="text-xs opacity-80">
-                من إجمالي {stats.totalSales.toLocaleString()} دينار
+                من إجمالي {formatCurrencySimple(stats.totalSales)}
               </p>
             </CardContent>
           </Card>
@@ -237,7 +241,7 @@ const Index = () => {
               <DollarSign className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalProfit.toLocaleString()} دينار</div>
+              <div className="text-lg sm:text-2xl font-bold">{formatCurrencySimple(stats.totalProfit)}</div>
               <p className="text-xs opacity-80">
                 هامش ربح {stats.totalSales > 0 ? ((stats.totalProfit / stats.totalSales) * 100).toFixed(1) : 0}%
               </p>
@@ -250,7 +254,7 @@ const Index = () => {
               <ShoppingCart className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.pendingOrders}</div>
+              <div className="text-xl sm:text-2xl font-bold">{stats.pendingOrders}</div>
               <p className="text-xs opacity-80">
                 {stats.pendingOrders > 0 ? 'يحتاج متابعة' : 'جميع الأوامر منفذة'}
               </p>
@@ -258,22 +262,29 @@ const Index = () => {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* رسم المبيعات الأخيرة */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-green-600" />
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                 المبيعات خلال آخر 7 أيام
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={chartConfig} className="h-[300px]">
+              <ChartContainer config={chartConfig} className="h-[250px] sm:h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={stats.recentSales}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
+                    <XAxis 
+                      dataKey="date" 
+                      fontSize={12}
+                      tick={{ fontSize: 10 }}
+                    />
+                    <YAxis 
+                      fontSize={12}
+                      tick={{ fontSize: 10 }}
+                    />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar dataKey="amount" fill="var(--color-amount)" radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -285,26 +296,26 @@ const Index = () => {
           {/* توزيع الفئات */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-green-600" />
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Package className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                 توزيع المنتجات حسب الفئة
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {stats.categoryDistribution.map((item, index) => {
                   const percentage = stats.totalProducts > 0 ? (item.count / stats.totalProducts) * 100 : 0;
                   return (
                     <div key={index} className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{item.category}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                      <span className="text-sm font-medium truncate flex-1 ml-2">{item.category}</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="w-16 sm:w-24 bg-gray-200 rounded-full h-2">
                           <div
                             className="bg-green-600 h-2 rounded-full"
                             style={{ width: `${percentage}%` }}
                           ></div>
                         </div>
-                        <span className="text-sm text-gray-600 w-12">{item.count}</span>
+                        <span className="text-sm text-gray-600 w-8 sm:w-12 text-left">{item.count}</span>
                       </div>
                     </div>
                   );
@@ -321,35 +332,37 @@ const Index = () => {
         {stats.lowStockItems.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
                 منتجات بمخزون منخفض
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-yellow-50">
-                      <th className="p-3 border border-gray-300 text-right font-semibold text-yellow-800">المنتج</th>
-                      <th className="p-3 border border-gray-300 text-right font-semibold text-yellow-800">الفئة</th>
-                      <th className="p-3 border border-gray-300 text-right font-semibold text-yellow-800">المخزون المتبقي</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats.lowStockItems.map((item, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="p-3 border border-gray-300 font-medium">{item.name}</td>
-                        <td className="p-3 border border-gray-300">{item.category}</td>
-                        <td className="p-3 border border-gray-300 text-center">
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            {item.stock}
-                          </span>
-                        </td>
+              <div className="overflow-x-auto -mx-2 sm:mx-0">
+                <div className="min-w-full inline-block align-middle">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-yellow-50">
+                        <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-yellow-800 text-sm">المنتج</th>
+                        <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-yellow-800 text-sm">الفئة</th>
+                        <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-yellow-800 text-sm">المخزون</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {stats.lowStockItems.map((item, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="p-2 sm:p-3 border border-gray-300 font-medium text-sm">{item.name}</td>
+                          <td className="p-2 sm:p-3 border border-gray-300 text-sm">{item.category}</td>
+                          <td className="p-2 sm:p-3 border border-gray-300 text-center">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              {item.stock}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </CardContent>
           </Card>

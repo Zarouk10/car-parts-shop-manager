@@ -123,4 +123,58 @@
   .modal-backdrop {
     backdrop-filter: blur(4px);
   }
+
+  /* تحسينات للشاشات الصغيرة والأندرويد */
+  @media screen and (max-width: 640px) {
+    .text-responsive {
+      font-size: 0.875rem;
+    }
+    
+    .card-responsive {
+      margin: 0.5rem;
+      padding: 0.75rem;
+    }
+    
+    .chart-responsive {
+      height: 200px;
+    }
+  }
+
+  /* دعم safe area للهواتف */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* تحسينات للمس على الشاشات الصغيرة */
+  @media (hover: none) {
+    .hover\:bg-gray-50:hover {
+      background-color: rgb(249 250 251);
+    }
+  }
+
+  /* تحسين عرض الجداول على الشاشات الصغيرة */
+  .table-responsive {
+    min-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* تحسين النصوص للشاشات الصغيرة */
+  @media screen and (max-width: 480px) {
+    .text-xl {
+      font-size: 1.125rem;
+    }
+    
+    .text-2xl {
+      font-size: 1.25rem;
+    }
+    
+    .text-3xl {
+      font-size: 1.5rem;
+    }
+  }
 }
