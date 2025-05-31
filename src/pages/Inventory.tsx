@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { formatCurrencySimple } from '@/lib/currency';
 
 interface Product {
   id: string;
@@ -155,7 +156,7 @@ const Inventory = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="purchase_price">سعر الشراء</Label>
+          <Label htmlFor="purchase_price">سعر الشراء (دينار عراقي)</Label>
           <Input
             id="purchase_price"
             name="purchase_price"
@@ -170,7 +171,7 @@ const Inventory = () => {
         </div>
         
         <div>
-          <Label htmlFor="selling_price">سعر البيع</Label>
+          <Label htmlFor="selling_price">سعر البيع (دينار عراقي)</Label>
           <Input
             id="selling_price"
             name="selling_price"
@@ -322,8 +323,8 @@ const Inventory = () => {
                           {product.category}
                         </span>
                       </td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{product.purchase_price.toFixed(2)} ر.س</td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{product.selling_price.toFixed(2)} ر.س</td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{formatCurrencySimple(product.purchase_price)}</td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{formatCurrencySimple(product.selling_price)}</td>
                       <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">
                         <span className={`px-2 py-1 rounded-full text-xs ${
                           product.stock_quantity < 10 

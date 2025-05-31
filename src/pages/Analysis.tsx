@@ -1,171 +1,174 @@
+
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, BarChart3, Calendar, Package } from 'lucide-react';
+import { BarChart3, TrendingUp, DollarSign, Package, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { formatCurrencySimple } from '@/lib/currency';
 import ExportData from '@/components/ExportData';
 
-interface SalesAnalytics {
-  totalSales: number;
-  totalProfit: number;
-  totalLoss: number;
-  dailyAverage: number;
-  weeklyAverage: number;
-  monthlyAverage: number;
-  bestSellingProducts: Array<{
-    name: string;
-    quantity: number;
-    revenue: number;
-  }>;
-  dailySalesData: Array<{
+interface AnalyticsData {
+  dailySales: Array<{
     date: string;
     sales: number;
     profit: number;
   }>;
-  categorySales: Array<{
-    category: string;
-    value: number;
-    percentage: number;
+  topProducts: Array<{
+    name: string;
+    quantity: number;
+    revenue: number;
   }>;
+  categoryPerformance: Array<{
+    category: string;
+    sales: number;
+    profit: number;
+  }>;
+  totalRevenue: number;
+  totalProfit: number;
+  totalOrders: number;
+  averageOrderValue: number;
 }
 
 const Analysis = () => {
-  const [analytics, setAnalytics] = useState<SalesAnalytics>({
-    totalSales: 0,
+  const [data, setData] = useState<AnalyticsData>({
+    dailySales: [],
+    topProducts: [],
+    categoryPerformance: [],
+    totalRevenue: 0,
     totalProfit: 0,
-    totalLoss: 0,
-    dailyAverage: 0,
-    weeklyAverage: 0,
-    monthlyAverage: 0,
-    bestSellingProducts: [],
-    dailySalesData: [],
-    categorySales: []
+    totalOrders: 0,
+    averageOrderValue: 0
   });
+  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState({
-    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    to: new Date().toISOString().split('T')[0]
-  });
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchAnalytics();
-  }, [dateRange]);
+    fetchAnalyticsData();
+  }, [timeRange]);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
+      
+      const daysBack = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+      const startDate = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('المستخدم غير مسجل الدخول');
 
-      // جلب بيانات المبيعات
-      const { data: sales, error: salesError } = await supabase
+      // جلب بيانات المبيعات مع تفاصيل المنتجات
+      const { data: salesData } = await supabase
         .from('sales')
         .select(`
-          *,
+          id,
+          sale_date,
+          total_amount,
           sale_items (
-            *,
-            products (name, category, purchase_price, selling_price)
+            quantity,
+            unit_price,
+            total_price,
+            products (name, category, purchase_price)
           )
         `)
-        .gte('sale_date', dateRange.from)
-        .lte('sale_date', dateRange.to)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .gte('sale_date', startDate)
+        .order('sale_date');
 
-      if (salesError) throw salesError;
+      if (salesData) {
+        // تحليل المبيعات اليومية
+        const dailySalesMap = new Map();
+        let totalRevenue = 0;
+        let totalProfit = 0;
+        const productSales = new Map();
+        const categorySales = new Map();
 
-      // حساب الإحصائيات
-      const totalSales = sales?.reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0;
-      
-      let totalProfit = 0;
-      let totalLoss = 0;
-      const productSales: Record<string, { quantity: number; revenue: number; name: string }> = {};
-      const categorySales: Record<string, number> = {};
-      const dailySales: Record<string, { sales: number; profit: number }> = {};
+        salesData.forEach(sale => {
+          const date = sale.sale_date;
+          totalRevenue += Number(sale.total_amount);
 
-      sales?.forEach(sale => {
-        const saleDate = sale.sale_date;
-        if (!dailySales[saleDate]) {
-          dailySales[saleDate] = { sales: 0, profit: 0 };
-        }
-        dailySales[saleDate].sales += Number(sale.total_amount);
-
-        sale.sale_items?.forEach((item: any) => {
-          const product = item.products;
-          if (product) {
-            const itemProfit = (Number(item.unit_price) - Number(product.purchase_price)) * Number(item.quantity);
-            
-            if (itemProfit > 0) {
-              totalProfit += itemProfit;
-            } else {
-              totalLoss += Math.abs(itemProfit);
-            }
-            
-            dailySales[saleDate].profit += itemProfit;
-
-            // أفضل المنتجات مبيعاً
-            if (!productSales[product.name]) {
-              productSales[product.name] = { quantity: 0, revenue: 0, name: product.name };
-            }
-            productSales[product.name].quantity += Number(item.quantity);
-            productSales[product.name].revenue += Number(item.total_price);
-
-            // مبيعات الفئات
-            if (!categorySales[product.category]) {
-              categorySales[product.category] = 0;
-            }
-            categorySales[product.category] += Number(item.total_price);
+          if (!dailySalesMap.has(date)) {
+            dailySalesMap.set(date, { sales: 0, profit: 0 });
           }
+
+          let dayProfit = 0;
+          sale.sale_items?.forEach((item: any) => {
+            const product = item.products;
+            if (product) {
+              const profit = (Number(item.unit_price) - Number(product.purchase_price)) * Number(item.quantity);
+              dayProfit += profit;
+              totalProfit += profit;
+
+              // إحصائيات المنتجات
+              const productKey = product.name;
+              if (!productSales.has(productKey)) {
+                productSales.set(productKey, { quantity: 0, revenue: 0 });
+              }
+              const productData = productSales.get(productKey);
+              productData.quantity += Number(item.quantity);
+              productData.revenue += Number(item.total_price);
+
+              // إحصائيات الفئات
+              const categoryKey = product.category;
+              if (!categorySales.has(categoryKey)) {
+                categorySales.set(categoryKey, { sales: 0, profit: 0 });
+              }
+              const categoryData = categorySales.get(categoryKey);
+              categoryData.sales += Number(item.total_price);
+              categoryData.profit += profit;
+            }
+          });
+
+          const dayData = dailySalesMap.get(date);
+          dayData.sales += Number(sale.total_amount);
+          dayData.profit += dayProfit;
         });
-      });
 
-      // حساب المتوسطات
-      const daysCount = Math.max(1, Math.ceil((new Date(dateRange.to).getTime() - new Date(dateRange.from).getTime()) / (1000 * 60 * 60 * 24)));
-      const dailyAverage = totalSales / daysCount;
-      const weeklyAverage = (totalSales / daysCount) * 7;
-      const monthlyAverage = (totalSales / daysCount) * 30;
+        // تحويل البيانات إلى مصفوفات
+        const dailySales = Array.from(dailySalesMap.entries())
+          .map(([date, data]: [string, any]) => ({
+            date: new Date(date).toLocaleDateString('ar', { month: 'short', day: 'numeric' }),
+            sales: data.sales,
+            profit: data.profit
+          }))
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-      // تحويل البيانات للرسوم البيانية
-      const bestSellingProducts = Object.values(productSales)
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 5);
+        const topProducts = Array.from(productSales.entries())
+          .map(([name, data]: [string, any]) => ({
+            name,
+            quantity: data.quantity,
+            revenue: data.revenue
+          }))
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 10);
 
-      const dailySalesData = Object.entries(dailySales)
-        .map(([date, data]) => ({
-          date: new Date(date).toLocaleDateString('ar-SA'),
-          sales: data.sales,
-          profit: data.profit
-        }))
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const categoryPerformance = Array.from(categorySales.entries())
+          .map(([category, data]: [string, any]) => ({
+            category,
+            sales: data.sales,
+            profit: data.profit
+          }))
+          .sort((a, b) => b.sales - a.sales);
 
-      const totalCategorySales = Object.values(categorySales).reduce((sum, value) => sum + value, 0);
-      const categoryData = Object.entries(categorySales)
-        .map(([category, value]) => ({
-          category,
-          value,
-          percentage: totalCategorySales > 0 ? (value / totalCategorySales) * 100 : 0
-        }))
-        .sort((a, b) => b.value - a.value);
-
-      setAnalytics({
-        totalSales,
-        totalProfit,
-        totalLoss,
-        dailyAverage,
-        weeklyAverage,
-        monthlyAverage,
-        bestSellingProducts,
-        dailySalesData,
-        categorySales: categoryData
-      });
+        setData({
+          dailySales,
+          topProducts,
+          categoryPerformance,
+          totalRevenue,
+          totalProfit,
+          totalOrders: salesData.length,
+          averageOrderValue: salesData.length > 0 ? totalRevenue / salesData.length : 0
+        });
+      }
 
     } catch (error) {
-      console.error('Error fetching analytics:', error);
+      console.error('Error fetching analytics data:', error);
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء جلب بيانات التحليلات",
+        description: "حدث خطأ أثناء جلب بيانات التحليل",
         variant: "destructive",
       });
     } finally {
@@ -179,18 +182,18 @@ const Analysis = () => {
       color: "#10b981",
     },
     profit: {
-      label: "الربح",
+      label: "الأرباح",
       color: "#3b82f6",
     }
   };
 
-  const pieColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center" dir="rtl">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">جارٍ تحميل التحليلات...</p>
         </div>
       </div>
@@ -198,111 +201,83 @@ const Analysis = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50" dir="rtl">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-        {/* فلاتر التاريخ */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-green-600" />
-              فترة التحليل
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">من تاريخ</label>
-                <input
-                  type="date"
-                  value={dateRange.from}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">إلى تاريخ</label>
-                <input
-                  type="date"
-                  value={dateRange.to}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">تحليل المبيعات والأرباح</h1>
+            <p className="text-gray-600 mt-2">تحليل شامل لأداء المبيعات والأرباح</p>
+          </div>
+          
+          <Select value={timeRange} onValueChange={(value: '7d' | '30d' | '90d') => setTimeRange(value)}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="اختر الفترة الزمنية" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">آخر 7 أيام</SelectItem>
+              <SelectItem value="30d">آخر 30 يوم</SelectItem>
+              <SelectItem value="90d">آخر 90 يوم</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        {/* ملخص الإحصائيات */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* البطاقات الإحصائية */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي المبيعات</CardTitle>
-              <DollarSign className="h-4 w-4 text-green-600" />
+              <CardTitle className="text-sm font-medium">إجمالي الإيرادات</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {analytics.totalSales.toFixed(2)} ر.س
-              </div>
+              <div className="text-2xl font-bold text-green-600">{formatCurrencySimple(data.totalRevenue)}</div>
               <p className="text-xs text-muted-foreground">
-                معدل يومي: {analytics.dailyAverage.toFixed(2)} ر.س
+                للفترة المحددة
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي الربح</CardTitle>
-              <TrendingUp className="h-4 w-4 text-blue-600" />
+              <CardTitle className="text-sm font-medium">إجمالي الأرباح</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {analytics.totalProfit.toFixed(2)} ر.س
-              </div>
+              <div className="text-2xl font-bold text-blue-600">{formatCurrencySimple(data.totalProfit)}</div>
               <p className="text-xs text-muted-foreground">
-                هامش ربح: {analytics.totalSales > 0 ? ((analytics.totalProfit / analytics.totalSales) * 100).toFixed(1) : 0}%
+                هامش ربح {data.totalRevenue > 0 ? ((data.totalProfit / data.totalRevenue) * 100).toFixed(1) : 0}%
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">معدل البيع الأسبوعي</CardTitle>
-              <BarChart3 className="h-4 w-4 text-purple-600" />
+              <CardTitle className="text-sm font-medium">عدد الطلبات</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {analytics.weeklyAverage.toFixed(2)} ر.س
-              </div>
+              <div className="text-2xl font-bold">{data.totalOrders}</div>
               <p className="text-xs text-muted-foreground">
-                توقع شهري: {analytics.monthlyAverage.toFixed(2)} ر.س
+                إجمالي عمليات البيع
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">الخسائر</CardTitle>
-              <TrendingDown className="h-4 w-4 text-red-600" />
+              <CardTitle className="text-sm font-medium">متوسط قيمة الطلب</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                {analytics.totalLoss.toFixed(2)} ر.س
-              </div>
+              <div className="text-2xl font-bold">{formatCurrencySimple(data.averageOrderValue)}</div>
               <p className="text-xs text-muted-foreground">
-                نسبة الخسارة: {analytics.totalSales > 0 ? ((analytics.totalLoss / analytics.totalSales) * 100).toFixed(1) : 0}%
+                متوسط قيمة البيع الواحد
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* تصدير البيانات */}
-        <div className="mb-8">
-          <ExportData />
-        </div>
-
-        {/* الرسوم البيانية */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* رسم المبيعات اليومية */}
+          {/* رسم المبيعات والأرباح اليومية */}
           <Card>
             <CardHeader>
               <CardTitle>المبيعات والأرباح اليومية</CardTitle>
@@ -310,88 +285,92 @@ const Analysis = () => {
             <CardContent>
               <ChartContainer config={chartConfig} className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={analytics.dailySalesData}>
+                  <BarChart data={data.dailySales}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
                     <YAxis />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line type="monotone" dataKey="sales" stroke="var(--color-sales)" strokeWidth={2} />
-                    <Line type="monotone" dataKey="profit" stroke="var(--color-profit)" strokeWidth={2} />
-                  </LineChart>
+                    <Bar dataKey="sales" fill="var(--color-sales)" name="المبيعات" />
+                    <Bar dataKey="profit" fill="var(--color-profit)" name="الأرباح" />
+                  </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
             </CardContent>
           </Card>
 
-          {/* مبيعات الفئات */}
+          {/* أداء الفئات */}
           <Card>
             <CardHeader>
-              <CardTitle>توزيع المبيعات حسب الفئة</CardTitle>
+              <CardTitle>أداء الفئات</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={analytics.categorySales}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ category, percentage }) => `${category}: ${percentage.toFixed(1)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {analytics.categorySales.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
-                      ))}
-                    </Pie>
-                    <ChartTooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+              <div className="h-[300px] flex items-center justify-center">
+                {data.categoryPerformance.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={data.categoryPerformance}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ category, percent }) => `${category} (${(percent * 100).toFixed(0)}%)`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="sales"
+                      >
+                        {data.categoryPerformance.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-gray-500">لا توجد بيانات متاحة</p>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* أفضل المنتجات مبيعاً */}
-        <Card>
+        <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-green-600" />
-              أفضل المنتجات مبيعاً
-            </CardTitle>
+            <CardTitle>أفضل المنتجات مبيعاً</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-green-50">
-                    <th className="p-3 border border-gray-300 text-right font-semibold text-green-800">المنتج</th>
-                    <th className="p-3 border border-gray-300 text-right font-semibold text-green-800">الكمية المباعة</th>
-                    <th className="p-3 border border-gray-300 text-right font-semibold text-green-800">إجمالي الإيرادات</th>
+                  <tr className="bg-blue-50">
+                    <th className="p-3 border border-gray-300 text-right font-semibold text-blue-800">المنتج</th>
+                    <th className="p-3 border border-gray-300 text-right font-semibold text-blue-800">الكمية المباعة</th>
+                    <th className="p-3 border border-gray-300 text-right font-semibold text-blue-800">إجمالي الإيرادات</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {analytics.bestSellingProducts.map((product, index) => (
+                  {data.topProducts.map((product, index) => (
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="p-3 border border-gray-300 font-medium">{product.name}</td>
                       <td className="p-3 border border-gray-300 text-center">{product.quantity}</td>
-                      <td className="p-3 border border-gray-300 text-center font-medium text-green-600">
-                        {product.revenue.toFixed(2)} ر.س
+                      <td className="p-3 border border-gray-300 text-center font-semibold text-green-600">
+                        {formatCurrencySimple(product.revenue)}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {analytics.bestSellingProducts.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  لا توجد بيانات مبيعات في الفترة المحددة
+              {data.topProducts.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">لا توجد بيانات مبيعات متاحة</p>
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
+
+        {/* مكون تصدير البيانات */}
+        <ExportData />
       </main>
     </div>
   );

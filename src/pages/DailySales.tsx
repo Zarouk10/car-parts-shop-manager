@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { formatCurrencySimple } from '@/lib/currency';
 
 interface Product {
   id: string;
@@ -308,7 +309,7 @@ const DailySales = () => {
                         />
                       </td>
                       <td className="p-2 sm:p-3 border border-gray-300 text-center font-medium text-xs sm:text-sm">
-                        {item.total_price.toFixed(2)} ر.س
+                        {formatCurrencySimple(item.total_price)}
                       </td>
                       <td className="p-2 sm:p-3 border border-gray-300 text-center">
                         <Button
@@ -335,7 +336,7 @@ const DailySales = () => {
 
               <div className="text-center sm:text-right">
                 <div className="text-lg font-bold text-green-800">
-                  الإجمالي الكلي: {grandTotal.toFixed(2)} ر.س
+                  الإجمالي الكلي: {formatCurrencySimple(grandTotal)}
                 </div>
               </div>
             </div>
