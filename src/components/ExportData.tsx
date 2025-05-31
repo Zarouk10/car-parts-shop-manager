@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
 
 const ExportData = () => {
   const [exportType, setExportType] = useState<'sales' | 'products' | 'orders'>('sales');
@@ -79,14 +78,14 @@ const ExportData = () => {
 
           data = salesData?.flatMap(sale => 
             sale.sale_items.map(item => ({
-              'تاريخ البيع': format(new Date(sale.sale_date), 'dd/MM/yyyy', { locale: ar }),
+              'تاريخ البيع': format(new Date(sale.sale_date), 'dd/MM/yyyy'),
               'اسم المنتج': item.products?.name || 'غير محدد',
               'الفئة': item.products?.category || 'غير محدد',
               'الكمية': item.quantity,
               'سعر الوحدة': item.unit_price,
               'إجمالي السعر': item.total_price,
               'إجمالي البيع': sale.total_amount,
-              'وقت الإنشاء': format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm', { locale: ar })
+              'وقت الإنشاء': format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm')
             }))
           ) || [];
           filename = 'sales_report';
@@ -105,7 +104,7 @@ const ExportData = () => {
             'سعر البيع': product.selling_price,
             'كمية المخزون': product.stock_quantity,
             'الوحدة': product.unit,
-            'تاريخ الإنشاء': format(new Date(product.created_at), 'dd/MM/yyyy', { locale: ar })
+            'تاريخ الإنشاء': format(new Date(product.created_at), 'dd/MM/yyyy')
           })) || [];
           filename = 'products_report';
           break;
@@ -124,9 +123,9 @@ const ExportData = () => {
             'سعر الشراء': order.purchase_price || 'غير محدد',
             'سعر البيع': order.selling_price || 'غير محدد',
             'حالة الشراء': order.is_purchased ? 'مُنفذ' : 'معلق',
-            'تاريخ الشراء': order.purchase_date ? format(new Date(order.purchase_date), 'dd/MM/yyyy', { locale: ar }) : 'غير محدد',
+            'تاريخ الشراء': order.purchase_date ? format(new Date(order.purchase_date), 'dd/MM/yyyy') : 'غير محدد',
             'ملاحظات': order.notes || 'لا توجد',
-            'تاريخ الإنشاء': format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })
+            'تاريخ الإنشاء': format(new Date(order.created_at), 'dd/MM/yyyy')
           })) || [];
           filename = 'purchase_orders_report';
           break;

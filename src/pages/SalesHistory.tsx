@@ -7,7 +7,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Calendar } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfYear, endOfYear, startOfDay, endOfDay } from 'date-fns';
-import { ar } from 'date-fns/locale';
 
 interface Sale {
   id: string;
@@ -115,13 +114,13 @@ const SalesHistory = () => {
   const getPeriodTitle = () => {
     switch (selectedPeriod) {
       case 'daily':
-        return `مبيعات ${format(selectedDate, 'dd MMMM yyyy', { locale: ar })}`;
+        return `مبيعات ${format(selectedDate, 'dd/MM/yyyy')}`;
       case 'weekly':
         const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
         const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-        return `مبيعات الأسبوع من ${format(weekStart, 'dd MMM', { locale: ar })} إلى ${format(weekEnd, 'dd MMM yyyy', { locale: ar })}`;
+        return `مبيعات الأسبوع من ${format(weekStart, 'dd/MM')} إلى ${format(weekEnd, 'dd/MM/yyyy')}`;
       case 'yearly':
-        return `مبيعات عام ${format(selectedDate, 'yyyy', { locale: ar })}`;
+        return `مبيعات عام ${format(selectedDate, 'yyyy')}`;
       default:
         return 'سجل المبيعات';
     }
@@ -176,7 +175,7 @@ const SalesHistory = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {getTotalSales().toLocaleString()} ريال
+              {getTotalSales().toLocaleString()} دينار
             </div>
             <p className="text-xs text-muted-foreground">
               {sales.length} عملية بيع
@@ -217,7 +216,7 @@ const SalesHistory = () => {
                   {sales.map((sale) => (
                     <TableRow key={sale.id}>
                       <TableCell className="font-medium">
-                        {format(new Date(sale.sale_date), 'dd/MM/yyyy', { locale: ar })}
+                        {format(new Date(sale.sale_date), 'dd/MM/yyyy')}
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
@@ -229,10 +228,10 @@ const SalesHistory = () => {
                         </div>
                       </TableCell>
                       <TableCell className="font-bold text-green-600">
-                        {sale.total_amount.toLocaleString()} ريال
+                        {sale.total_amount.toLocaleString()} دينار
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">
-                        {format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm', { locale: ar })}
+                        {format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm')}
                       </TableCell>
                     </TableRow>
                   ))}

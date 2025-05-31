@@ -112,7 +112,7 @@ const Index = () => {
         for (let i = 6; i >= 0; i--) {
           const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
           const dateStr = date.toISOString().split('T')[0];
-          const dayName = date.toLocaleDateString('ar-SA', { weekday: 'short' });
+          const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
           
           const daySales = sales
             .filter(sale => sale.sale_date === dateStr)
@@ -225,9 +225,9 @@ const Index = () => {
               <TrendingUp className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.todaySales.toFixed(2)} ر.س</div>
+              <div className="text-2xl font-bold">{stats.todaySales.toFixed(2)} د.ع</div>
               <p className="text-xs opacity-80">
-                من إجمالي {stats.totalSales.toFixed(2)} ر.س
+                من إجمالي {stats.totalSales.toFixed(2)} د.ع
               </p>
             </CardContent>
           </Card>
@@ -238,7 +238,7 @@ const Index = () => {
               <DollarSign className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalProfit.toFixed(2)} ر.س</div>
+              <div className="text-2xl font-bold">{stats.totalProfit.toFixed(2)} د.ع</div>
               <p className="text-xs opacity-80">
                 هامش ربح {stats.totalSales > 0 ? ((stats.totalProfit / stats.totalSales) * 100).toFixed(1) : 0}%
               </p>
