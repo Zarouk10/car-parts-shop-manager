@@ -114,13 +114,13 @@ const SalesHistory = () => {
   const getPeriodTitle = () => {
     switch (selectedPeriod) {
       case 'daily':
-        return `مبيعات ${format(selectedDate, 'dd/MM/yyyy')}`;
+        return `مبيعات ${selectedDate.toLocaleDateString('ar-IQ')}`;
       case 'weekly':
         const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
         const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-        return `مبيعات الأسبوع من ${format(weekStart, 'dd/MM')} إلى ${format(weekEnd, 'dd/MM/yyyy')}`;
+        return `مبيعات الأسبوع من ${weekStart.toLocaleDateString('ar-IQ')} إلى ${weekEnd.toLocaleDateString('ar-IQ')}`;
       case 'yearly':
-        return `مبيعات عام ${format(selectedDate, 'yyyy')}`;
+        return `مبيعات عام ${selectedDate.getFullYear()}`;
       default:
         return 'سجل المبيعات';
     }
@@ -216,13 +216,13 @@ const SalesHistory = () => {
                   {sales.map((sale) => (
                     <TableRow key={sale.id}>
                       <TableCell className="font-medium">
-                        {format(new Date(sale.sale_date), 'dd/MM/yyyy')}
+                        {new Date(sale.sale_date).toLocaleDateString('ar-IQ')}
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
                           {sale.sale_items.map((item) => (
                             <div key={item.id} className="text-sm">
-                              {item.product.name} - الكمية: {item.quantity} - السعر: {item.unit_price}
+                              {item.product.name} - الكمية: {item.quantity} - السعر: {item.unit_price} دينار
                             </div>
                           ))}
                         </div>
@@ -231,7 +231,13 @@ const SalesHistory = () => {
                         {sale.total_amount.toLocaleString()} دينار
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">
-                        {format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm')}
+                        {new Date(sale.created_at).toLocaleDateString('ar-IQ', { 
+                          year: 'numeric', 
+                          month: '2-digit', 
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </TableCell>
                     </TableRow>
                   ))}

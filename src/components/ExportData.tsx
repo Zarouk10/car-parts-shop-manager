@@ -78,14 +78,20 @@ const ExportData = () => {
 
           data = salesData?.flatMap(sale => 
             sale.sale_items.map(item => ({
-              'تاريخ البيع': format(new Date(sale.sale_date), 'dd/MM/yyyy'),
+              'تاريخ البيع': new Date(sale.sale_date).toLocaleDateString('ar-IQ'),
               'اسم المنتج': item.products?.name || 'غير محدد',
               'الفئة': item.products?.category || 'غير محدد',
               'الكمية': item.quantity,
-              'سعر الوحدة': item.unit_price,
-              'إجمالي السعر': item.total_price,
-              'إجمالي البيع': sale.total_amount,
-              'وقت الإنشاء': format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm')
+              'سعر الوحدة': item.unit_price + ' دينار',
+              'إجمالي السعر': item.total_price + ' دينار',
+              'إجمالي البيع': sale.total_amount + ' دينار',
+              'وقت الإنشاء': new Date(sale.created_at).toLocaleDateString('ar-IQ', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              })
             }))
           ) || [];
           filename = 'sales_report';
@@ -100,11 +106,11 @@ const ExportData = () => {
           data = productsData?.map(product => ({
             'اسم المنتج': product.name,
             'الفئة': product.category,
-            'سعر الشراء': product.purchase_price,
-            'سعر البيع': product.selling_price,
+            'سعر الشراء': product.purchase_price + ' دينار',
+            'سعر البيع': product.selling_price + ' دينار',
             'كمية المخزون': product.stock_quantity,
             'الوحدة': product.unit,
-            'تاريخ الإنشاء': format(new Date(product.created_at), 'dd/MM/yyyy')
+            'تاريخ الإنشاء': new Date(product.created_at).toLocaleDateString('ar-IQ')
           })) || [];
           filename = 'products_report';
           break;
@@ -120,12 +126,12 @@ const ExportData = () => {
           data = ordersData?.map(order => ({
             'اسم المنتج': order.item_name,
             'الكمية': order.quantity,
-            'سعر الشراء': order.purchase_price || 'غير محدد',
-            'سعر البيع': order.selling_price || 'غير محدد',
+            'سعر الشراء': order.purchase_price ? order.purchase_price + ' دينار' : 'غير محدد',
+            'سعر البيع': order.selling_price ? order.selling_price + ' دينار' : 'غير محدد',
             'حالة الشراء': order.is_purchased ? 'مُنفذ' : 'معلق',
-            'تاريخ الشراء': order.purchase_date ? format(new Date(order.purchase_date), 'dd/MM/yyyy') : 'غير محدد',
+            'تاريخ الشراء': order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ar-IQ') : 'غير محدد',
             'ملاحظات': order.notes || 'لا توجد',
-            'تاريخ الإنشاء': format(new Date(order.created_at), 'dd/MM/yyyy')
+            'تاريخ الإنشاء': new Date(order.created_at).toLocaleDateString('ar-IQ')
           })) || [];
           filename = 'purchase_orders_report';
           break;
