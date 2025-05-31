@@ -1,10 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, DollarSign, Package, Calendar } from 'lucide-react';
+import { BarChart3, TrendingUp, DollarSign, Package } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrencySimple } from '@/lib/currency';
@@ -176,17 +175,6 @@ const Analysis = () => {
     }
   };
 
-  const chartConfig = {
-    sales: {
-      label: "المبيعات",
-      color: "#10b981",
-    },
-    profit: {
-      label: "الأرباح",
-      color: "#3b82f6",
-    }
-  };
-
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
   if (loading) {
@@ -283,7 +271,7 @@ const Analysis = () => {
               <CardTitle className="text-base sm:text-lg">المبيعات والأرباح اليومية</CardTitle>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={chartConfig} className="h-[250px] sm:h-[300px]">
+              <div className="h-[250px] sm:h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data.dailySales}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -296,12 +284,17 @@ const Analysis = () => {
                       fontSize={12}
                       tick={{ fontSize: 10 }}
                     />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="sales" fill="var(--color-sales)" name="المبيعات" />
-                    <Bar dataKey="profit" fill="var(--color-profit)" name="الأرباح" />
+                    <Tooltip 
+                      formatter={(value, name) => [
+                        formatCurrencySimple(Number(value)), 
+                        name === 'sales' ? 'المبيعات' : 'الأرباح'
+                      ]}
+                    />
+                    <Bar dataKey="sales" fill="#10b981" name="المبيعات" />
+                    <Bar dataKey="profit" fill="#3b82f6" name="الأرباح" />
                   </BarChart>
                 </ResponsiveContainer>
-              </ChartContainer>
+              </div>
             </CardContent>
           </Card>
 
@@ -330,7 +323,9 @@ const Analysis = () => {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Tooltip 
+                        formatter={(value) => [formatCurrencySimple(Number(value)), 'المبيعات']}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
