@@ -1,373 +1,167 @@
 
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, Package, DollarSign, AlertTriangle, ShoppingCart, BarChart3 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { formatCurrencySimple } from '@/lib/currency';
-import AlertBanner from '@/components/AlertBanner';
-
-interface DashboardStats {
-  totalProducts: number;
-  lowStockProducts: number;
-  todaySales: number;
-  totalSales: number;
-  totalProfit: number;
-  pendingOrders: number;
-  recentSales: Array<{
-    date: string;
-    amount: number;
-  }>;
-  categoryDistribution: Array<{
-    category: string;
-    count: number;
-  }>;
-  lowStockItems: Array<{
-    name: string;
-    stock: number;
-    category: string;
-  }>;
-}
+import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Package, ShoppingCart, TrendingUp, BarChart3, DollarSign, AlertTriangle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalProducts: 0,
-    lowStockProducts: 0,
-    todaySales: 0,
-    totalSales: 0,
-    totalProfit: 0,
-    pendingOrders: 0,
-    recentSales: [],
-    categoryDistribution: [],
-    lowStockItems: []
-  });
-  const [loading, setLoading] = useState(true);
-  const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([]);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const today = new Date().toISOString().split('T')[0];
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-      // جلب بيانات المنتجات
-      const { data: products } = await supabase
-        .from('products')
-        .select('*')
-        .eq('user_id', user.id);
-
-      // جلب بيانات المبيعات
-      const { data: sales } = await supabase
-        .from('sales')
-        .select(`
-          *,
-          sale_items (
-            *,
-            products (name, purchase_price, selling_price)
-          )
-        `)
-        .eq('user_id', user.id);
-
-      // جلب أوامر الشراء المعلقة
-      const { data: pendingOrders } = await supabase
-        .from('purchase_orders')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_purchased', false);
-
-      if (products && sales) {
-        // حساب الإحصائيات
-        const totalProducts = products.length;
-        const lowStockItems = products.filter(p => p.stock_quantity <= 5);
-        const lowStockProducts = lowStockItems.length;
-
-        const todaySales = sales
-          .filter(sale => sale.sale_date === today)
-          .reduce((sum, sale) => sum + Number(sale.total_amount), 0);
-
-        const totalSales = sales.reduce((sum, sale) => sum + Number(sale.total_amount), 0);
-
-        let totalProfit = 0;
-        sales.forEach(sale => {
-          sale.sale_items?.forEach((item: any) => {
-            const product = item.products;
-            if (product) {
-              const profit = (Number(item.unit_price) - Number(product.purchase_price)) * Number(item.quantity);
-              totalProfit += profit;
-            }
-          });
-        });
-
-        // بيانات المبيعات الأخيرة (آخر 7 أيام)
-        const recentSales = [];
-        for (let i = 6; i >= 0; i--) {
-          const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-          const dateStr = date.toISOString().split('T')[0];
-          const dayName = date.toLocaleDateString('ar-IQ', { weekday: 'short' });
-          
-          const daySales = sales
-            .filter(sale => sale.sale_date === dateStr)
-            .reduce((sum, sale) => sum + Number(sale.total_amount), 0);
-          
-          recentSales.push({
-            date: dayName,
-            amount: daySales
-          });
-        }
-
-        // توزيع الفئات
-        const categoryCount: Record<string, number> = {};
-        products.forEach(product => {
-          categoryCount[product.category] = (categoryCount[product.category] || 0) + 1;
-        });
-
-        const categoryDistribution = Object.entries(categoryCount).map(([category, count]) => ({
-          category,
-          count
-        }));
-
-        setStats({
-          totalProducts,
-          lowStockProducts,
-          todaySales,
-          totalSales,
-          totalProfit,
-          pendingOrders: pendingOrders?.length || 0,
-          recentSales,
-          categoryDistribution,
-          lowStockItems: lowStockItems.slice(0, 5).map(item => ({
-            name: item.name,
-            stock: item.stock_quantity,
-            category: item.category
-          }))
-        });
-      }
-
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء جلب بيانات لوحة التحكم",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+  const quickStats = [
+    {
+      title: 'إجمالي المنتجات',
+      value: '0',
+      icon: Package,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50'
+    },
+    {
+      title: 'المبيعات اليوم',
+      value: '0 د.ع',
+      icon: DollarSign,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50'
+    },
+    {
+      title: 'قائمة التسوق',
+      value: '0',
+      icon: ShoppingCart,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50'
+    },
+    {
+      title: 'تنبيهات المخزون',
+      value: '0',
+      icon: AlertTriangle,
+      color: 'text-red-600',
+      bgColor: 'bg-red-50'
     }
-  };
+  ];
 
-  const chartConfig = {
-    amount: {
-      label: "المبيعات",
-      color: "#10b981",
+  const quickActions = [
+    {
+      title: 'إدارة المخزون',
+      description: 'عرض وإدارة المنتجات في المخزون',
+      icon: Package,
+      link: '/inventory',
+      color: 'border-blue-200 hover:border-blue-300'
+    },
+    {
+      title: 'قائمة التسوق',
+      description: 'إضافة أصناف جديدة لقائمة التسوق',
+      icon: ShoppingCart,
+      link: '/purchase-orders',
+      color: 'border-orange-200 hover:border-orange-300'
+    },
+    {
+      title: 'مبيعات اليوم',
+      description: 'تسجيل المبيعات اليومية',
+      icon: TrendingUp,
+      link: '/daily-sales',
+      color: 'border-green-200 hover:border-green-300'
+    },
+    {
+      title: 'التحليلات',
+      description: 'عرض التقارير والإحصائيات',
+      icon: BarChart3,
+      link: '/analysis',
+      color: 'border-purple-200 hover:border-purple-300'
     }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center p-4" dir="rtl">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-sm">جارٍ تحميل لوحة التحكم...</p>
-        </div>
-      </div>
-    );
-  }
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 pb-4" dir="rtl">
-      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-2 sm:py-4 lg:py-6">
-        {/* التنبيهات - محسنة للموبايل */}
-        <div className="space-y-2 mb-3 sm:mb-4">
-          {stats.lowStockProducts > 0 && !dismissedAlerts.includes('low-stock') && (
-            <AlertBanner
-              title="تنبيه: مخزون منخفض"
-              message={`يوجد ${stats.lowStockProducts} منتج بمخزون منخفض يحتاج إلى إعادة تموين`}
-              type="warning"
-              onDismiss={() => setDismissedAlerts(prev => [...prev, 'low-stock'])}
-            />
-          )}
-
-          {stats.pendingOrders > 0 && !dismissedAlerts.includes('pending-orders') && (
-            <AlertBanner
-              title="أوامر شراء معلقة"
-              message={`يوجد ${stats.pendingOrders} أمر شراء في انتظار التنفيذ`}
-              type="info"
-              onDismiss={() => setDismissedAlerts(prev => [...prev, 'pending-orders'])}
-            />
-          )}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4 sm:p-6 lg:p-8" dir="rtl">
+      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-2 sm:space-y-4 py-4 sm:py-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight">
+            مرحباً بك في نظام إدارة المخزون
+          </h1>
+          <p className="text-sm sm:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            إدارة شاملة للمخزون والمبيعات مع واجهة سهلة الاستخدام
+          </p>
         </div>
 
-        {/* البطاقات الرئيسية - محسنة للموبايل */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-6">
-          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 p-3 sm:p-4">
-              <CardTitle className="text-xs sm:text-sm font-medium leading-tight">إجمالي المنتجات</CardTitle>
-              <Package className="h-3 w-3 sm:h-4 sm:w-4" />
-            </CardHeader>
-            <CardContent className="p-3 sm:p-4 pt-0">
-              <div className="text-lg sm:text-xl lg:text-2xl font-bold">{stats.totalProducts}</div>
-              <p className="text-xs opacity-80 leading-tight">
-                {stats.lowStockProducts > 0 && `${stats.lowStockProducts} بمخزون منخفض`}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 p-3 sm:p-4">
-              <CardTitle className="text-xs sm:text-sm font-medium leading-tight">مبيعات اليوم</CardTitle>
-              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
-            </CardHeader>
-            <CardContent className="p-3 sm:p-4 pt-0">
-              <div className="text-sm sm:text-lg lg:text-xl font-bold">{formatCurrencySimple(stats.todaySales)}</div>
-              <p className="text-xs opacity-80 leading-tight">
-                من إجمالي {formatCurrencySimple(stats.totalSales)}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 p-3 sm:p-4">
-              <CardTitle className="text-xs sm:text-sm font-medium leading-tight">إجمالي الأرباح</CardTitle>
-              <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
-            </CardHeader>
-            <CardContent className="p-3 sm:p-4 pt-0">
-              <div className="text-sm sm:text-lg lg:text-xl font-bold">{formatCurrencySimple(stats.totalProfit)}</div>
-              <p className="text-xs opacity-80 leading-tight">
-                هامش ربح {stats.totalSales > 0 ? ((stats.totalProfit / stats.totalSales) * 100).toFixed(1) : 0}%
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 p-3 sm:p-4">
-              <CardTitle className="text-xs sm:text-sm font-medium leading-tight">أوامر شراء معلقة</CardTitle>
-              <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4" />
-            </CardHeader>
-            <CardContent className="p-3 sm:p-4 pt-0">
-              <div className="text-lg sm:text-xl lg:text-2xl font-bold">{stats.pendingOrders}</div>
-              <p className="text-xs opacity-80 leading-tight">
-                {stats.pendingOrders > 0 ? 'يحتاج متابعة' : 'جميع الأوامر منفذة'}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
-          {/* رسم المبيعات الأخيرة - محسن للموبايل */}
-          <Card>
-            <CardHeader className="p-3 sm:p-4 lg:p-6">
-              <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
-                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-                المبيعات خلال آخر 7 أيام
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
-              <ChartContainer config={chartConfig} className="h-[200px] sm:h-[250px] lg:h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.recentSales} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="date" 
-                      fontSize={10}
-                      tick={{ fontSize: 9 }}
-                    />
-                    <YAxis 
-                      fontSize={10}
-                      tick={{ fontSize: 9 }}
-                    />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="amount" fill="var(--color-amount)" radius={[2, 2, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-
-          {/* توزيع الفئات - محسن للموبايل */}
-          <Card>
-            <CardHeader className="p-3 sm:p-4 lg:p-6">
-              <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
-                <Package className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-                توزيع المنتجات حسب الفئة
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
-              <div className="space-y-2 sm:space-y-3">
-                {stats.categoryDistribution.map((item, index) => {
-                  const percentage = stats.totalProducts > 0 ? (item.count / stats.totalProducts) * 100 : 0;
-                  return (
-                    <div key={index} className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm font-medium truncate flex-1 ml-2">{item.category}</span>
-                      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                        <div className="w-12 sm:w-16 lg:w-24 bg-gray-200 rounded-full h-1.5 sm:h-2">
-                          <div
-                            className="bg-green-600 h-1.5 sm:h-2 rounded-full"
-                            style={{ width: `${percentage}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-xs sm:text-sm text-gray-600 w-6 sm:w-8 text-left">{item.count}</span>
-                      </div>
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+          {quickStats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={index} className="shadow-sm hover:shadow-md transition-shadow duration-200">
+                <CardContent className="p-3 sm:p-4 lg:p-6">
+                  <div className="flex items-center justify-between space-x-2 space-x-reverse">
+                    <div className="space-y-1 sm:space-y-2 flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">
+                        {stat.title}
+                      </p>
+                      <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">
+                        {stat.value}
+                      </p>
                     </div>
-                  );
-                })}
-                {stats.categoryDistribution.length === 0 && (
-                  <p className="text-center text-gray-500 py-4 text-sm">لا توجد منتجات بعد</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                    <div className={`p-2 sm:p-3 rounded-full ${stat.bgColor} flex-shrink-0`}>
+                      <Icon className={`h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 ${stat.color}`} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
-        {/* المنتجات بمخزون منخفض - محسنة للموبايل */}
-        {stats.lowStockItems.length > 0 && (
-          <Card>
-            <CardHeader className="p-3 sm:p-4 lg:p-6">
-              <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
-                <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
-                منتجات بمخزون منخفض
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
-              <div className="overflow-x-auto -mx-1 sm:mx-0">
-                <div className="min-w-full inline-block align-middle">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-yellow-50">
-                        <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-yellow-800 text-xs sm:text-sm">المنتج</th>
-                        <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-yellow-800 text-xs sm:text-sm">الفئة</th>
-                        <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-yellow-800 text-xs sm:text-sm">المخزون</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stats.lowStockItems.map((item, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="p-2 sm:p-3 border border-gray-300 font-medium text-xs sm:text-sm">{item.name}</td>
-                          <td className="p-2 sm:p-3 border border-gray-300 text-xs sm:text-sm">{item.category}</td>
-                          <td className="p-2 sm:p-3 border border-gray-300 text-center">
-                            <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              {item.stock}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </main>
+        {/* Quick Actions */}
+        <div className="space-y-4 sm:space-y-6">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 text-center">
+            الإجراءات السريعة
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {quickActions.map((action, index) => {
+              const Icon = action.icon;
+              return (
+                <Link
+                  key={index}
+                  to={action.link}
+                  className="block group"
+                >
+                  <Card className={`h-full border-2 ${action.color} transition-all duration-200 hover:shadow-lg group-hover:scale-105`}>
+                    <CardHeader className="text-center space-y-3 sm:space-y-4 p-4 sm:p-6">
+                      <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                        <Icon className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                      </div>
+                      <CardTitle className="text-base sm:text-lg font-bold text-gray-900 leading-tight">
+                        {action.title}
+                      </CardTitle>
+                      <CardDescription className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                        {action.description}
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Recent Activity Section */}
+        <Card className="shadow-sm">
+          <CardHeader className="text-center p-4 sm:p-6">
+            <CardTitle className="text-lg sm:text-xl text-gray-900">
+              النشاط الأخير
+            </CardTitle>
+            <CardDescription className="text-sm sm:text-base text-gray-600">
+              آخر العمليات في النظام
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6">
+            <div className="text-center py-8 sm:py-12">
+              <Package className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
+              <p className="text-sm sm:text-base text-gray-600 font-medium">
+                لا توجد أنشطة حديثة
+              </p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1 sm:mt-2">
+                ابدأ باستخدام النظام لرؤية الأنشطة هنا
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
