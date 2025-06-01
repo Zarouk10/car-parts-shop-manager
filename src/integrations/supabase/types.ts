@@ -74,6 +74,7 @@ export type Database = {
       }
       purchase_orders: {
         Row: {
+          category: string | null
           created_at: string | null
           id: string
           is_purchased: boolean | null
@@ -86,6 +87,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category?: string | null
           created_at?: string | null
           id?: string
           is_purchased?: boolean | null
@@ -98,6 +100,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category?: string | null
           created_at?: string | null
           id?: string
           is_purchased?: boolean | null

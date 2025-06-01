@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, ShoppingCart, Edit2, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -6,13 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface PurchaseOrder {
   id: string;
   item_name: string;
+  category: string;
   quantity: number;
   notes: string | null;
   purchase_price: number;
@@ -31,12 +33,15 @@ const PurchaseOrders = () => {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     item_name: '',
+    category: 'عام',
     quantity: '1',
     notes: '',
     purchase_price: '',
     selling_price: ''
   });
   const { toast } = useToast();
+
+  const categories = ['عام', 'إلكترونيات', 'أجهزة', 'قطع غيار', 'مواد غذائية', 'أخرى'];
 
   useEffect(() => {
     fetchOrders();
@@ -51,10 +56,10 @@ const PurchaseOrders = () => {
 
       if (error) throw error;
       
-      // تحويل البيانات من قاعدة البيانات إلى النوع المطلوب مع القيم الافتراضية
       const ordersWithDefaults: PurchaseOrder[] = (data || []).map(order => ({
         id: order.id,
         item_name: order.item_name,
+        category: order.category || 'عام',
         quantity: order.quantity,
         notes: order.notes,
         purchase_price: order.purchase_price || 0,
@@ -94,11 +99,11 @@ const PurchaseOrders = () => {
       if (!user) throw new Error('المستخدم غير مسجل الدخول');
 
       if (editingOrder) {
-        // تحديث العنصر
         const { error } = await supabase
           .from('purchase_orders')
           .update({
             item_name: formData.item_name,
+            category: formData.category,
             quantity: parseInt(formData.quantity),
             notes: formData.notes || null,
             purchase_price: parseFloat(formData.purchase_price) || 0,
@@ -113,11 +118,11 @@ const PurchaseOrders = () => {
           description: "تم تحديث العنصر بنجاح",
         });
       } else {
-        // إضافة عنصر جديد
         const { error } = await supabase
           .from('purchase_orders')
           .insert({
             item_name: formData.item_name,
+            category: formData.category,
             quantity: parseInt(formData.quantity),
             notes: formData.notes || null,
             purchase_price: parseFloat(formData.purchase_price) || 0,
@@ -133,12 +138,10 @@ const PurchaseOrders = () => {
         });
       }
 
-      // إعادة تعيين النموذج
-      setFormData({ item_name: '', quantity: '1', notes: '', purchase_price: '', selling_price: '' });
+      setFormData({ item_name: '', category: 'عام', quantity: '1', notes: '', purchase_price: '', selling_price: '' });
       setEditingOrder(null);
       setIsModalOpen(false);
       
-      // إعادة جلب البيانات
       fetchOrders();
     } catch (error) {
       console.error('Error saving order:', error);
@@ -156,6 +159,7 @@ const PurchaseOrders = () => {
     setEditingOrder(order);
     setFormData({
       item_name: order.item_name,
+      category: order.category,
       quantity: order.quantity.toString(),
       notes: order.notes || '',
       purchase_price: order.purchase_price?.toString() || '',
@@ -192,9 +196,16 @@ const PurchaseOrders = () => {
   };
 
   const resetForm = () => {
-    setFormData({ item_name: '', quantity: '1', notes: '', purchase_price: '', selling_price: '' });
+    setFormData({ item_name: '', category: 'عام', quantity: '1', notes: '', purchase_price: '', selling_price: '' });
     setEditingOrder(null);
     setIsModalOpen(false);
+  };
+
+  const formatCurrency = (amount: number) => {
+    return `${amount.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    })} د.ع`;
   };
 
   const handleMarkAsPurchased = async (order: PurchaseOrder) => {
@@ -213,12 +224,11 @@ const PurchaseOrders = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('المستخدم غير مسجل الدخول');
 
-      // إضافة العنصر إلى المخزون
       const { error: insertError } = await supabase
         .from('products')
         .insert({
           name: order.item_name,
-          category: 'عام', // فئة افتراضية
+          category: order.category,
           purchase_price: order.purchase_price || 0,
           selling_price: order.selling_price || 0,
           stock_quantity: order.quantity,
@@ -228,7 +238,6 @@ const PurchaseOrders = () => {
 
       if (insertError) throw insertError;
 
-      // تحديث العنصر في قائمة التسوق لتسجيل تاريخ الشراء
       const { error: updateError } = await supabase
         .from('purchase_orders')
         .update({
@@ -269,7 +278,6 @@ const PurchaseOrders = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4 sm:p-6 lg:p-8" dir="rtl">
       <div className="max-w-7xl mx-auto">
-        {/* عنوان الصفحة */}
         <Card className="mb-6 shadow-sm">
           <CardHeader className="p-4 sm:p-6">
             <CardTitle className="flex items-center gap-2 text-lg sm:text-xl text-blue-800">
@@ -312,6 +320,22 @@ const PurchaseOrders = () => {
                       dir="rtl"
                     />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="category" className="text-sm sm:text-base font-medium">الفئة *</Label>
+                    <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+                      <SelectTrigger className="w-full text-sm sm:text-base p-3 border-2 rounded-lg focus:border-blue-500">
+                        <SelectValue placeholder="اختر الفئة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map(category => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="quantity" className="text-sm sm:text-base font-medium">الكمية المطلوبة *</Label>
@@ -331,7 +355,7 @@ const PurchaseOrders = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="purchase_price" className="text-sm sm:text-base font-medium">سعر الشراء</Label>
+                      <Label htmlFor="purchase_price" className="text-sm sm:text-base font-medium">سعر الشراء (د.ع)</Label>
                       <Input
                         id="purchase_price"
                         name="purchase_price"
@@ -347,7 +371,7 @@ const PurchaseOrders = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="selling_price" className="text-sm sm:text-base font-medium">سعر البيع</Label>
+                      <Label htmlFor="selling_price" className="text-sm sm:text-base font-medium">سعر البيع (د.ع)</Label>
                       <Input
                         id="selling_price"
                         name="selling_price"
@@ -400,7 +424,6 @@ const PurchaseOrders = () => {
           </CardContent>
         </Card>
 
-        {/* قائمة الأصناف */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {orders.map((order) => (
             <Card key={order.id} className={`hover:shadow-lg transition-all duration-200 border ${order.is_purchased ? 'border-green-200 bg-green-50' : 'border-gray-200'}`}>
@@ -417,13 +440,19 @@ const PurchaseOrders = () => {
                   </span>
                 </div>
 
+                <div className="mb-3">
+                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">
+                    {order.category}
+                  </span>
+                </div>
+
                 {(order.purchase_price || order.selling_price) && (
                   <div className="mb-3 text-xs sm:text-sm text-gray-600">
                     {order.purchase_price && (
-                      <div>سعر الشراء: {order.purchase_price} ر.س</div>
+                      <div>سعر الشراء: {formatCurrency(order.purchase_price)}</div>
                     )}
                     {order.selling_price && (
-                      <div>سعر البيع: {order.selling_price} ر.س</div>
+                      <div>سعر البيع: {formatCurrency(order.selling_price)}</div>
                     )}
                   </div>
                 )}

@@ -8,6 +8,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
 import PurchaseOrders from "./pages/PurchaseOrders";
+import Purchases from "./pages/Purchases";
 import DailySales from "./pages/DailySales";
 import Inventory from "./pages/Inventory";
 import Analysis from "./pages/Analysis";
@@ -34,6 +35,13 @@ const App = () => (
             <ProtectedRoute>
               <Layout>
                 <PurchaseOrders />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/purchases" element={
+            <ProtectedRoute>
+              <Layout>
+                <Purchases />
               </Layout>
             </ProtectedRoute>
           } />
