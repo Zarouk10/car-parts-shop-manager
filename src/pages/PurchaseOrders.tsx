@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, ShoppingCart } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -164,31 +163,31 @@ const PurchaseOrders = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4" dir="rtl">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-sm sm:text-base">جارٍ التحميل...</p>
+          <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">جارٍ التحميل...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4 sm:p-6 lg:p-8" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6 lg:p-8" dir="rtl">
       <div className="max-w-7xl mx-auto">
-        <Card className="mb-6 shadow-sm">
+        <Card className="mb-6 shadow-sm dark:bg-gray-800/50 dark:border-gray-700">
           <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl text-blue-800">
-              <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl text-blue-800 dark:text-blue-300">
+              <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
               قائمة التسوق
             </CardTitle>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2 leading-relaxed">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2 leading-relaxed">
               استخدم هذه الصفحة لتدوين الأصناف التي تحتاج لشرائها من السوق. اضغط على علامة ✓ عند الشراء لنقلها إلى المخزون مع الاحتفاظ بسجل الشراء
             </p>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0">
             <Button 
-              className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto text-sm sm:text-base px-4 py-3 sm:px-6 sm:py-3"
+              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 w-full sm:w-auto text-sm sm:text-base px-4 py-3 sm:px-6 sm:py-3"
               onClick={() => setIsModalOpen(true)}
             >
               <Plus className="h-4 w-4 ml-2" />
@@ -211,9 +210,9 @@ const PurchaseOrders = () => {
 
         {orders.length === 0 && (
           <div className="text-center py-12 sm:py-16">
-            <ShoppingCart className="h-16 w-16 sm:h-20 sm:w-20 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 text-base sm:text-lg mb-2 font-medium">قائمة التسوق فارغة</p>
-            <p className="text-gray-500 text-sm sm:text-base">ابدأ بإضافة الأصناف التي تحتاج لشرائها</p>
+            <ShoppingCart className="h-16 w-16 sm:h-20 sm:w-20 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-600 dark:text-gray-400 text-base sm:text-lg mb-2 font-medium">قائمة التسوق فارغة</p>
+            <p className="text-gray-500 dark:text-gray-500 text-sm sm:text-base">ابدأ بإضافة الأصناف التي تحتاج لشرائها</p>
           </div>
         )}
 

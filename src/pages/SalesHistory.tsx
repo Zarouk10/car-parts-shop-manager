@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +29,19 @@ const SalesHistory = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'yearly'>('daily');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const { toast } = useToast();
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return `${date.toLocaleDateString('en-CA')} ${date.toLocaleTimeString('en-GB', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })}`;
+  };
 
   const fetchSales = async (period: 'daily' | 'weekly' | 'yearly', date: Date) => {
     try {
@@ -79,7 +91,6 @@ const SalesHistory = () => {
 
       if (error) throw error;
 
-      // تحويل البيانات لتتطابق مع النوع المطلوب
       const formattedSales: Sale[] = (data || []).map(sale => ({
         ...sale,
         sale_items: sale.sale_items.map(item => ({
@@ -114,11 +125,11 @@ const SalesHistory = () => {
   const getPeriodTitle = () => {
     switch (selectedPeriod) {
       case 'daily':
-        return `مبيعات ${selectedDate.toLocaleDateString('ar-IQ')}`;
+        return `مبيعات ${formatDate(selectedDate.toISOString())}`;
       case 'weekly':
         const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
         const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-        return `مبيعات الأسبوع من ${weekStart.toLocaleDateString('ar-IQ')} إلى ${weekEnd.toLocaleDateString('ar-IQ')}`;
+        return `مبيعات الأسبوع من ${formatDate(weekStart.toISOString())} إلى ${formatDate(weekEnd.toISOString())}`;
       case 'yearly':
         return `مبيعات عام ${selectedDate.getFullYear()}`;
       default:
@@ -127,26 +138,26 @@ const SalesHistory = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8" dir="rtl">
+    <div className="container mx-auto px-4 py-8 dark:bg-gray-900 min-h-screen" dir="rtl">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">سجل المبيعات</h1>
-          <p className="text-gray-600 mt-2">عرض وإدارة سجل المبيعات حسب الفترة المحددة</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">سجل المبيعات</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">عرض وإدارة سجل المبيعات حسب الفترة المحددة</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <Card>
+        <Card className="dark:bg-gray-800/50 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الفترة الزمنية</CardTitle>
+            <CardTitle className="text-sm font-medium dark:text-white">الفترة الزمنية</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <Select value={selectedPeriod} onValueChange={(value: 'daily' | 'weekly' | 'yearly') => setSelectedPeriod(value)}>
-              <SelectTrigger>
+              <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                 <SelectValue placeholder="اختر الفترة" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="dark:bg-gray-800 dark:border-gray-600">
                 <SelectItem value="daily">يومي</SelectItem>
                 <SelectItem value="weekly">أسبوعي</SelectItem>
                 <SelectItem value="yearly">سنوي</SelectItem>
@@ -155,39 +166,39 @@ const SalesHistory = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="dark:bg-gray-800/50 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">التاريخ</CardTitle>
+            <CardTitle className="text-sm font-medium dark:text-white">التاريخ</CardTitle>
           </CardHeader>
           <CardContent>
             <input
               type="date"
               value={format(selectedDate, 'yyyy-MM-dd')}
               onChange={(e) => setSelectedDate(new Date(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="dark:bg-gray-800/50 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المبيعات</CardTitle>
+            <CardTitle className="text-sm font-medium dark:text-white">إجمالي المبيعات</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
               {getTotalSales().toLocaleString()} دينار
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground dark:text-gray-400">
               {sales.length} عملية بيع
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
+      <Card className="dark:bg-gray-800/50 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>{getPeriodTitle()}</CardTitle>
-          <CardDescription>
+          <CardTitle className="dark:text-white">{getPeriodTitle()}</CardTitle>
+          <CardDescription className="dark:text-gray-400">
             تفاصيل المبيعات للفترة المحددة
           </CardDescription>
         </CardHeader>
@@ -195,30 +206,30 @@ const SalesHistory = () => {
           {loading ? (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-              <p className="mt-2 text-gray-600">جاري تحميل البيانات...</p>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">جاري تحميل البيانات...</p>
             </div>
           ) : sales.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-600">لا توجد مبيعات في هذه الفترة</p>
+              <p className="text-gray-600 dark:text-gray-400">لا توجد مبيعات في هذه الفترة</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">تاريخ البيع</TableHead>
-                    <TableHead className="text-right">المنتجات</TableHead>
-                    <TableHead className="text-right">إجمالي المبلغ</TableHead>
-                    <TableHead className="text-right">وقت الإنشاء</TableHead>
+                  <TableRow className="dark:border-gray-700">
+                    <TableHead className="text-right dark:text-gray-300">تاريخ البيع</TableHead>
+                    <TableHead className="text-right dark:text-gray-300">المنتجات</TableHead>
+                    <TableHead className="text-right dark:text-gray-300">إجمالي المبلغ</TableHead>
+                    <TableHead className="text-right dark:text-gray-300">وقت الإنشاء</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sales.map((sale) => (
-                    <TableRow key={sale.id}>
-                      <TableCell className="font-medium">
-                        {new Date(sale.sale_date).toLocaleDateString('ar-IQ')}
+                    <TableRow key={sale.id} className="dark:border-gray-700">
+                      <TableCell className="font-medium dark:text-white">
+                        {formatDate(sale.sale_date)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="dark:text-gray-300">
                         <div className="space-y-1">
                           {sale.sale_items.map((item) => (
                             <div key={item.id} className="text-sm">
@@ -227,17 +238,11 @@ const SalesHistory = () => {
                           ))}
                         </div>
                       </TableCell>
-                      <TableCell className="font-bold text-green-600">
+                      <TableCell className="font-bold text-green-600 dark:text-green-400">
                         {sale.total_amount.toLocaleString()} دينار
                       </TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        {new Date(sale.created_at).toLocaleDateString('ar-IQ', { 
-                          year: 'numeric', 
-                          month: '2-digit', 
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                      <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+                        {formatDateTime(sale.created_at)}
                       </TableCell>
                     </TableRow>
                   ))}

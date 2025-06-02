@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -158,16 +157,16 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="mx-4 w-[calc(100vw-2rem)] sm:mx-auto sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="mx-4 w-[calc(100vw-2rem)] sm:mx-auto sm:max-w-md max-h-[90vh] overflow-y-auto dark:bg-gray-800 dark:border-gray-700">
         <DialogHeader className="pb-4">
-          <DialogTitle className="text-right text-lg sm:text-xl">
+          <DialogTitle className="text-right text-lg sm:text-xl dark:text-white">
             {editingOrder ? 'تعديل العنصر' : 'إضافة صنف جديد'}
           </DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="item_name" className="text-sm sm:text-base font-medium">اسم الصنف *</Label>
+            <Label htmlFor="item_name" className="text-sm sm:text-base font-medium dark:text-gray-300">اسم الصنف *</Label>
             <Input
               id="item_name"
               name="item_name"
@@ -175,13 +174,13 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
               onChange={handleInputChange}
               placeholder="مثال: بطارية سيارة"
               required
-              className="w-full text-sm sm:text-base p-3 border-2 rounded-lg focus:border-blue-500"
+              className="w-full text-sm sm:text-base p-3 border-2 rounded-lg focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               dir="rtl"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="category" className="text-sm sm:text-base font-medium">الفئة *</Label>
+            <Label htmlFor="category" className="text-sm sm:text-base font-medium dark:text-gray-300">الفئة *</Label>
             <Input
               id="category"
               name="category"
@@ -189,13 +188,13 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
               onChange={handleInputChange}
               placeholder="مثال: إلكترونيات، أجهزة، قطع غيار..."
               required
-              className="w-full text-sm sm:text-base p-3 border-2 rounded-lg focus:border-blue-500"
+              className="w-full text-sm sm:text-base p-3 border-2 rounded-lg focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               dir="rtl"
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="quantity" className="text-sm sm:text-base font-medium">الكمية المطلوبة *</Label>
+            <Label htmlFor="quantity" className="text-sm sm:text-base font-medium dark:text-gray-300">الكمية المطلوبة *</Label>
             <Input
               id="quantity"
               name="quantity"
@@ -205,14 +204,14 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
               onChange={handleInputChange}
               placeholder="1"
               required
-              className="w-full text-sm sm:text-base p-3 border-2 rounded-lg focus:border-blue-500"
+              className="w-full text-sm sm:text-base p-3 border-2 rounded-lg focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               dir="rtl"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="purchase_price" className="text-sm sm:text-base font-medium">سعر الشراء (د.ع)</Label>
+              <Label htmlFor="purchase_price" className="text-sm sm:text-base font-medium dark:text-gray-300">سعر الشراء (د.ع)</Label>
               <Input
                 id="purchase_price"
                 name="purchase_price"
@@ -222,13 +221,13 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
                 value={formData.purchase_price}
                 onChange={handleInputChange}
                 placeholder="0.00"
-                className="w-full text-sm sm:text-base p-3 border-2 rounded-lg focus:border-blue-500"
+                className="w-full text-sm sm:text-base p-3 border-2 rounded-lg focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 dir="rtl"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="selling_price" className="text-sm sm:text-base font-medium">سعر البيع (د.ع)</Label>
+              <Label htmlFor="selling_price" className="text-sm sm:text-base font-medium dark:text-gray-300">سعر البيع (د.ع)</Label>
               <Input
                 id="selling_price"
                 name="selling_price"
@@ -238,14 +237,14 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
                 value={formData.selling_price}
                 onChange={handleInputChange}
                 placeholder="0.00"
-                className="w-full text-sm sm:text-base p-3 border-2 rounded-lg focus:border-blue-500"
+                className="w-full text-sm sm:text-base p-3 border-2 rounded-lg focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 dir="rtl"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes" className="text-sm sm:text-base font-medium">ملاحظات (اختيارية)</Label>
+            <Label htmlFor="notes" className="text-sm sm:text-base font-medium dark:text-gray-300">ملاحظات (اختيارية)</Label>
             <Textarea
               id="notes"
               name="notes"
@@ -253,7 +252,7 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
               onChange={handleInputChange}
               placeholder="أي ملاحظات إضافية..."
               rows={3}
-              className="w-full text-sm sm:text-base p-3 border-2 rounded-lg focus:border-blue-500 resize-none"
+              className="w-full text-sm sm:text-base p-3 border-2 rounded-lg focus:border-blue-500 resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               dir="rtl"
             />
           </div>
@@ -262,7 +261,7 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
             <Button 
               type="submit" 
               disabled={saving} 
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 text-sm sm:text-base font-medium"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white py-3 text-sm sm:text-base font-medium"
             >
               {saving ? 'جارٍ الحفظ...' : (editingOrder ? 'تحديث العنصر' : 'حفظ في القائمة')}
             </Button>
@@ -270,7 +269,7 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
               type="button" 
               variant="outline" 
               onClick={onClose}
-              className="flex-1 sm:flex-none border-gray-300 text-gray-700 hover:bg-gray-50 py-3 text-sm sm:text-base"
+              className="flex-1 sm:flex-none border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 py-3 text-sm sm:text-base"
             >
               إلغاء
             </Button>

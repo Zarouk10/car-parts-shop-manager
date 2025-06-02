@@ -17,6 +17,19 @@ const ExportData = () => {
   const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return `${date.toLocaleDateString('en-CA')} ${date.toLocaleTimeString('en-GB', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })}`;
+  };
+
   const exportToCSV = (data: any[], filename: string) => {
     if (data.length === 0) {
       toast({
@@ -78,20 +91,14 @@ const ExportData = () => {
 
           data = salesData?.flatMap(sale => 
             sale.sale_items.map(item => ({
-              'تاريخ البيع': new Date(sale.sale_date).toLocaleDateString('ar-IQ'),
+              'تاريخ البيع': formatDate(sale.sale_date),
               'اسم المنتج': item.products?.name || 'غير محدد',
               'الفئة': item.products?.category || 'غير محدد',
               'الكمية': item.quantity,
               'سعر الوحدة': item.unit_price + ' دينار',
               'إجمالي السعر': item.total_price + ' دينار',
               'إجمالي البيع': sale.total_amount + ' دينار',
-              'وقت الإنشاء': new Date(sale.created_at).toLocaleDateString('ar-IQ', { 
-                year: 'numeric', 
-                month: '2-digit', 
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-              })
+              'وقت الإنشاء': formatDateTime(sale.created_at)
             }))
           ) || [];
           filename = 'sales_report';
@@ -110,7 +117,7 @@ const ExportData = () => {
             'سعر البيع': product.selling_price + ' دينار',
             'كمية المخزون': product.stock_quantity,
             'الوحدة': product.unit,
-            'تاريخ الإنشاء': new Date(product.created_at).toLocaleDateString('ar-IQ')
+            'تاريخ الإنشاء': formatDate(product.created_at)
           })) || [];
           filename = 'products_report';
           break;
@@ -129,9 +136,9 @@ const ExportData = () => {
             'سعر الشراء': order.purchase_price ? order.purchase_price + ' دينار' : 'غير محدد',
             'سعر البيع': order.selling_price ? order.selling_price + ' دينار' : 'غير محدد',
             'حالة الشراء': order.is_purchased ? 'مُنفذ' : 'معلق',
-            'تاريخ الشراء': order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ar-IQ') : 'غير محدد',
+            'تاريخ الشراء': order.purchase_date ? formatDate(order.purchase_date) : 'غير محدد',
             'ملاحظات': order.notes || 'لا توجد',
-            'تاريخ الإنشاء': new Date(order.created_at).toLocaleDateString('ar-IQ')
+            'تاريخ الإنشاء': formatDate(order.created_at)
           })) || [];
           filename = 'purchase_orders_report';
           break;
@@ -157,22 +164,22 @@ const ExportData = () => {
   };
 
   return (
-    <Card>
+    <Card className="dark:bg-gray-800/50 dark:border-gray-700">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-green-600" />
+        <CardTitle className="flex items-center gap-2 dark:text-white">
+          <FileText className="h-5 w-5 text-green-600 dark:text-green-400" />
           تصدير البيانات
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2">نوع البيانات</label>
+            <label className="block text-sm font-medium mb-2 dark:text-gray-300">نوع البيانات</label>
             <Select value={exportType} onValueChange={(value: 'sales' | 'products' | 'orders') => setExportType(value)}>
-              <SelectTrigger>
+              <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                 <SelectValue placeholder="اختر نوع البيانات" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="dark:bg-gray-800 dark:border-gray-600">
                 <SelectItem value="sales">تقرير المبيعات</SelectItem>
                 <SelectItem value="products">تقرير المنتجات</SelectItem>
                 <SelectItem value="orders">تقرير أوامر الشراء</SelectItem>
@@ -181,22 +188,22 @@ const ExportData = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">من تاريخ</label>
+            <label className="block text-sm font-medium mb-2 dark:text-gray-300">من تاريخ</label>
             <input
               type="date"
               value={dateRange.from}
               onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-2 focus:ring-green-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">إلى تاريخ</label>
+            <label className="block text-sm font-medium mb-2 dark:text-gray-300">إلى تاريخ</label>
             <input
               type="date"
               value={dateRange.to}
               onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-2 focus:ring-green-500"
             />
           </div>
         </div>
@@ -204,7 +211,7 @@ const ExportData = () => {
         <Button
           onClick={handleExport}
           disabled={isExporting}
-          className="w-full bg-green-600 hover:bg-green-700"
+          className="w-full bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700"
         >
           <Download className="h-4 w-4 mr-2" />
           {isExporting ? 'جارٍ التصدير...' : 'تصدير إلى CSV'}

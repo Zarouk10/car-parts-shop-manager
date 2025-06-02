@@ -38,29 +38,34 @@ const PurchaseOrderCard: React.FC<PurchaseOrderCardProps> = ({
     })} د.ع`;
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+  };
+
   return (
-    <Card className={`hover:shadow-lg transition-all duration-200 border ${order.is_purchased ? 'border-green-200 bg-green-50' : 'border-gray-200'}`}>
+    <Card className={`hover:shadow-lg transition-all duration-200 border ${order.is_purchased ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-gray-700'} dark:bg-gray-800/50`}>
       <CardContent className="p-4 sm:p-5">
         <div className="flex justify-between items-start mb-3 sm:mb-4">
-          <h3 className="font-semibold text-gray-900 text-base sm:text-lg leading-tight flex-1 ml-2">
+          <h3 className="font-semibold text-gray-900 dark:text-white text-base sm:text-lg leading-tight flex-1 ml-2">
             {order.item_name}
             {order.is_purchased && (
-              <span className="text-green-600 text-xs mr-2">✓ تم الشراء</span>
+              <span className="text-green-600 dark:text-green-400 text-xs mr-2">✓ تم الشراء</span>
             )}
           </h3>
-          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap">
+          <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap">
             {order.quantity}
           </span>
         </div>
 
         <div className="mb-3">
-          <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">
+          <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 px-2 py-1 rounded-full text-xs">
             {order.category}
           </span>
         </div>
 
         {(order.purchase_price || order.selling_price) && (
-          <div className="mb-3 text-xs sm:text-sm text-gray-600">
+          <div className="mb-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             {order.purchase_price && (
               <div>سعر الشراء: {formatCurrency(order.purchase_price)}</div>
             )}
@@ -71,20 +76,20 @@ const PurchaseOrderCard: React.FC<PurchaseOrderCardProps> = ({
         )}
         
         {order.notes && (
-          <p className="text-gray-600 text-xs sm:text-sm mb-4 leading-relaxed bg-gray-50 p-2 rounded">
+          <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-4 leading-relaxed bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
             {order.notes}
           </p>
         )}
 
         {order.is_purchased && order.purchase_date && (
-          <p className="text-green-600 text-xs mb-3">
-            تاريخ الشراء: {new Date(order.purchase_date).toLocaleDateString('ar-SA')}
+          <p className="text-green-600 dark:text-green-400 text-xs mb-3">
+            تاريخ الشراء: {formatDate(order.purchase_date)}
           </p>
         )}
         
-        <div className="flex justify-between items-center pt-3 border-t border-gray-100">
-          <span className="text-xs text-gray-500">
-            {new Date(order.created_at).toLocaleDateString('ar-SA')}
+        <div className="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {formatDate(order.created_at)}
           </span>
           
           <div className="flex gap-2">
@@ -92,7 +97,7 @@ const PurchaseOrderCard: React.FC<PurchaseOrderCardProps> = ({
               <Button
                 size="sm"
                 onClick={() => onMarkAsPurchased(order)}
-                className="bg-green-600 hover:bg-green-700 text-white p-2 h-8 w-8"
+                className="bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white p-2 h-8 w-8"
                 title="تم الشراء - نقل إلى المخزون"
               >
                 <Check className="h-3 w-3" />
@@ -102,7 +107,7 @@ const PurchaseOrderCard: React.FC<PurchaseOrderCardProps> = ({
               size="sm"
               variant="outline"
               onClick={() => onEdit(order)}
-              className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 h-8 w-8 border-blue-200"
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 p-2 h-8 w-8 border-blue-200 dark:border-blue-800"
             >
               <Edit2 className="h-3 w-3" />
             </Button>
@@ -110,7 +115,7 @@ const PurchaseOrderCard: React.FC<PurchaseOrderCardProps> = ({
               size="sm"
               variant="outline"
               onClick={() => onDelete(order.id)}
-              className="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 h-8 w-8 border-red-200"
+              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 h-8 w-8 border-red-200 dark:border-red-800"
             >
               <Trash2 className="h-3 w-3" />
             </Button>
