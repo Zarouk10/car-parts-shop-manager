@@ -37,6 +37,34 @@ body {
   }
 }
 
+/* تحسينات إضافية للوضع الليلي */
+.dark {
+  color-scheme: dark;
+}
+
+/* تحسين التمرير */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded-md;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-gray-500;
+}
+
+/* تحسين النظرة العامة للعناصر */
+.card-hover {
+  @apply transition-all duration-200 hover:shadow-lg dark:hover:shadow-gray-900/25;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -115,6 +143,6 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
   }
 }
