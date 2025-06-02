@@ -179,85 +179,85 @@ const Analysis = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 flex items-center justify-center p-4" dir="rtl">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">جارٍ تحميل التحليلات...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300">جارٍ تحميل التحليلات...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 pb-safe" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 pb-safe transition-colors duration-300" dir="rtl">
       <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-6 lg:py-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">تحليل المبيعات والأرباح</h1>
-            <p className="text-gray-600 mt-2">تحليل شامل لأداء المبيعات والأرباح</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">تحليل المبيعات والأرباح</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">تحليل شامل لأداء المبيعات والأرباح</p>
           </div>
           
           <Select value={timeRange} onValueChange={(value: '7d' | '30d' | '90d') => setTimeRange(value)}>
-            <SelectTrigger className="w-full sm:w-48">
+            <SelectTrigger className="w-full sm:w-48 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
               <SelectValue placeholder="اختر الفترة الزمنية" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7d">آخر 7 أيام</SelectItem>
-              <SelectItem value="30d">آخر 30 يوم</SelectItem>
-              <SelectItem value="90d">آخر 90 يوم</SelectItem>
+            <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+              <SelectItem value="7d" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">آخر 7 أيام</SelectItem>
+              <SelectItem value="30d" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">آخر 30 يوم</SelectItem>
+              <SelectItem value="90d" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">آخر 90 يوم</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* البطاقات الإحصائية */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي الإيرادات</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">إجمالي الإيرادات</CardTitle>
+              <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-lg sm:text-2xl font-bold text-green-600">{formatCurrencySimple(data.totalRevenue)}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">{formatCurrencySimple(data.totalRevenue)}</div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 للفترة المحددة
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي الأرباح</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">إجمالي الأرباح</CardTitle>
+              <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-lg sm:text-2xl font-bold text-blue-600">{formatCurrencySimple(data.totalProfit)}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{formatCurrencySimple(data.totalProfit)}</div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 هامش ربح {data.totalRevenue > 0 ? ((data.totalProfit / data.totalRevenue) * 100).toFixed(1) : 0}%
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">عدد الطلبات</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">عدد الطلبات</CardTitle>
+              <Package className="h-4 w-4 text-purple-600 dark:text-purple-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-xl sm:text-2xl font-bold">{data.totalOrders}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{data.totalOrders}</div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 إجمالي عمليات البيع
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">متوسط قيمة الطلب</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">متوسط قيمة الطلب</CardTitle>
+              <BarChart3 className="h-4 w-4 text-orange-600 dark:text-orange-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-lg sm:text-2xl font-bold">{formatCurrencySimple(data.averageOrderValue)}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">{formatCurrencySimple(data.averageOrderValue)}</div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 متوسط قيمة البيع الواحد
               </p>
             </CardContent>
@@ -266,29 +266,37 @@ const Analysis = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* رسم المبيعات والأرباح اليومية */}
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/10">
             <CardHeader>
-              <CardTitle className="text-base sm:text-lg">المبيعات والأرباح اليومية</CardTitle>
+              <CardTitle className="text-base sm:text-lg text-gray-900 dark:text-white">المبيعات والأرباح اليومية</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-[250px] sm:h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data.dailySales}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-gray-600" />
                     <XAxis 
                       dataKey="date" 
                       fontSize={12}
-                      tick={{ fontSize: 10 }}
+                      tick={{ fontSize: 10, fill: 'currentColor' }}
+                      className="text-gray-600 dark:text-gray-400"
                     />
                     <YAxis 
                       fontSize={12}
-                      tick={{ fontSize: 10 }}
+                      tick={{ fontSize: 10, fill: 'currentColor' }}
+                      className="text-gray-600 dark:text-gray-400"
                     />
                     <Tooltip 
                       formatter={(value, name) => [
                         formatCurrencySimple(Number(value)), 
                         name === 'sales' ? 'المبيعات' : 'الأرباح'
                       ]}
+                      contentStyle={{
+                        backgroundColor: 'var(--background)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '8px',
+                        color: 'var(--foreground)'
+                      }}
                     />
                     <Bar dataKey="sales" fill="#10b981" name="المبيعات" />
                     <Bar dataKey="profit" fill="#3b82f6" name="الأرباح" />
@@ -299,9 +307,9 @@ const Analysis = () => {
           </Card>
 
           {/* أداء الفئات */}
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/10">
             <CardHeader>
-              <CardTitle className="text-base sm:text-lg">أداء الفئات</CardTitle>
+              <CardTitle className="text-base sm:text-lg text-gray-900 dark:text-white">أداء الفئات</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-[250px] sm:h-[300px] flex items-center justify-center">
@@ -325,11 +333,17 @@ const Analysis = () => {
                       </Pie>
                       <Tooltip 
                         formatter={(value) => [formatCurrencySimple(Number(value)), 'المبيعات']}
+                        contentStyle={{
+                          backgroundColor: 'var(--background)',
+                          border: '1px solid var(--border)',
+                          borderRadius: '8px',
+                          color: 'var(--foreground)'
+                        }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="text-gray-500">لا توجد بيانات متاحة</p>
+                  <p className="text-gray-500 dark:text-gray-400">لا توجد بيانات متاحة</p>
                 )}
               </div>
             </CardContent>
@@ -337,27 +351,27 @@ const Analysis = () => {
         </div>
 
         {/* أفضل المنتجات مبيعاً */}
-        <Card className="mb-6 sm:mb-8">
+        <Card className="mb-6 sm:mb-8 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/10">
           <CardHeader>
-            <CardTitle className="text-base sm:text-lg">أفضل المنتجات مبيعاً</CardTitle>
+            <CardTitle className="text-base sm:text-lg text-gray-900 dark:text-white">أفضل المنتجات مبيعاً</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto -mx-2 sm:mx-0">
               <div className="min-w-full inline-block align-middle">
                 <table className="w-full border-collapse">
                   <thead>
-                    <tr className="bg-blue-50">
-                      <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-blue-800 text-sm">المنتج</th>
-                      <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-blue-800 text-sm">الكمية</th>
-                      <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-blue-800 text-sm">الإيرادات</th>
+                    <tr className="bg-blue-50 dark:bg-gray-700">
+                      <th className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600 text-right font-semibold text-blue-800 dark:text-blue-300 text-sm">المنتج</th>
+                      <th className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600 text-right font-semibold text-blue-800 dark:text-blue-300 text-sm">الكمية</th>
+                      <th className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600 text-right font-semibold text-blue-800 dark:text-blue-300 text-sm">الإيرادات</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.topProducts.map((product, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="p-2 sm:p-3 border border-gray-300 font-medium text-sm">{product.name}</td>
-                        <td className="p-2 sm:p-3 border border-gray-300 text-center text-sm">{product.quantity}</td>
-                        <td className="p-2 sm:p-3 border border-gray-300 text-center font-semibold text-green-600 text-sm">
+                      <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600 font-medium text-sm text-gray-900 dark:text-white">{product.name}</td>
+                        <td className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600 text-center text-sm text-gray-700 dark:text-gray-300">{product.quantity}</td>
+                        <td className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600 text-center font-semibold text-green-600 dark:text-green-400 text-sm">
                           {formatCurrencySimple(product.revenue)}
                         </td>
                       </tr>
@@ -366,7 +380,7 @@ const Analysis = () => {
                 </table>
                 {data.topProducts.length === 0 && (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">لا توجد بيانات مبيعات متاحة</p>
+                    <p className="text-gray-500 dark:text-gray-400">لا توجد بيانات مبيعات متاحة</p>
                   </div>
                 )}
               </div>
