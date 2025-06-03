@@ -188,83 +188,88 @@ const DailySales = () => {
 
   const getStockStatus = (quantity: number, available: number) => {
     if (quantity > available) {
-      return 'text-red-600 bg-red-50';
+      return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
     } else if (available < 10) {
-      return 'text-yellow-600 bg-yellow-50';
+      return 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800';
     }
-    return 'text-green-600 bg-green-50';
+    return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 transition-colors duration-300" dir="rtl">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">جارٍ التحميل...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 dark:border-green-400 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">جارٍ التحميل...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300" dir="rtl">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* معلومات الفاتورة */}
-        <Card className="mb-6 sm:mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+        <Card className="mb-6 sm:mb-8 shadow-sm border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-colors duration-300">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl text-green-800 dark:text-green-300">
+              <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
               معلومات الفاتورة
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="saleDate">تاريخ البيع</Label>
+                <Label htmlFor="saleDate" className="text-gray-700 dark:text-gray-300 font-medium">تاريخ البيع</Label>
                 <Input
                   type="date"
                   id="saleDate"
                   value={saleDate}
                   onChange={(e) => setSaleDate(e.target.value)}
+                  className="mt-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-green-500 dark:focus:ring-green-400"
                 />
               </div>
               <div>
-                <Label>رقم الفاتورة</Label>
-                <Input value={`INV-${Date.now()}`} disabled className="bg-gray-100" />
+                <Label className="text-gray-700 dark:text-gray-300 font-medium">رقم الفاتورة</Label>
+                <Input 
+                  value={`INV-${Date.now()}`} 
+                  disabled 
+                  className="mt-1 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400" 
+                />
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* جدول الأصناف */}
-        <Card className="mb-6 sm:mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+        <Card className="mb-6 sm:mb-8 shadow-sm border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-colors duration-300">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl text-green-800 dark:text-green-300">
+              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
               أصناف البيع
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-0">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse min-w-[600px]">
                 <thead>
-                  <tr className="bg-green-50">
-                    <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-green-800 text-xs sm:text-sm">الصنف</th>
-                    <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-green-800 text-xs sm:text-sm">المتوفر</th>
-                    <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-green-800 text-xs sm:text-sm">الكمية</th>
-                    <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-green-800 text-xs sm:text-sm">سعر الوحدة</th>
-                    <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-green-800 text-xs sm:text-sm">السعر الكلي</th>
-                    <th className="p-2 sm:p-3 border border-gray-300 text-right font-semibold text-green-800 text-xs sm:text-sm">إجراء</th>
+                  <tr className="bg-green-50 dark:bg-green-900/20">
+                    <th className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600 text-right font-semibold text-green-800 dark:text-green-300 text-xs sm:text-sm">الصنف</th>
+                    <th className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600 text-right font-semibold text-green-800 dark:text-green-300 text-xs sm:text-sm">المتوفر</th>
+                    <th className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600 text-right font-semibold text-green-800 dark:text-green-300 text-xs sm:text-sm">الكمية</th>
+                    <th className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600 text-right font-semibold text-green-800 dark:text-green-300 text-xs sm:text-sm">سعر الوحدة</th>
+                    <th className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600 text-right font-semibold text-green-800 dark:text-green-300 text-xs sm:text-sm">السعر الكلي</th>
+                    <th className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600 text-right font-semibold text-green-800 dark:text-green-300 text-xs sm:text-sm">إجراء</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="p-2 sm:p-3 border border-gray-300">
+                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200">
+                      <td className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600">
                         <select
                           value={item.product_id}
                           onChange={(e) => handleItemChange(index, 'product_id', e.target.value)}
-                          className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 text-xs sm:text-sm"
+                          className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 text-xs sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         >
                           <option value="">-- اختر صنف --</option>
                           {products.map(product => (
@@ -274,50 +279,50 @@ const DailySales = () => {
                           ))}
                         </select>
                       </td>
-                      <td className="p-2 sm:p-3 border border-gray-300 text-center">
+                      <td className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600 text-center">
                         {item.available_stock > 0 && (
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStockStatus(item.quantity, item.available_stock)}`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStockStatus(item.quantity, item.available_stock)}`}>
                             {item.available_stock}
                           </span>
                         )}
                       </td>
-                      <td className="p-2 sm:p-3 border border-gray-300">
+                      <td className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600">
                         <Input
                           type="number"
                           min="0"
                           max={item.available_stock}
                           value={item.quantity || ''}
                           onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                          className={`text-center text-xs sm:text-sm ${item.quantity > item.available_stock ? 'border-red-500 bg-red-50' : ''}`}
+                          className={`text-center text-xs sm:text-sm bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 ${item.quantity > item.available_stock ? 'border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-900/20' : ''}`}
                           placeholder="0"
                         />
                         {item.quantity > item.available_stock && (
-                          <p className="text-red-500 text-xs mt-1 text-center">
+                          <p className="text-red-500 dark:text-red-400 text-xs mt-1 text-center">
                             الحد الأقصى: {item.available_stock}
                           </p>
                         )}
                       </td>
-                      <td className="p-2 sm:p-3 border border-gray-300">
+                      <td className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600">
                         <Input
                           type="number"
                           min="0"
                           step="0.01"
                           value={item.unit_price || ''}
                           onChange={(e) => handleItemChange(index, 'unit_price', e.target.value)}
-                          className="text-center text-xs sm:text-sm"
+                          className="text-center text-xs sm:text-sm bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                           placeholder="0.00"
                         />
                       </td>
-                      <td className="p-2 sm:p-3 border border-gray-300 text-center font-medium text-xs sm:text-sm">
+                      <td className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600 text-center font-medium text-xs sm:text-sm text-gray-900 dark:text-gray-100">
                         {formatCurrencySimple(item.total_price)}
                       </td>
-                      <td className="p-2 sm:p-3 border border-gray-300 text-center">
+                      <td className="p-2 sm:p-3 border border-gray-300 dark:border-gray-600 text-center">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => removeRow(index)}
                           disabled={items.length === 1}
-                          className="text-red-600 hover:text-red-800 p-1 h-8 w-8"
+                          className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 p-1 h-8 w-8"
                         >
                           <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
@@ -329,13 +334,17 @@ const DailySales = () => {
             </div>
 
             <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <Button onClick={addNewRow} variant="outline" className="text-green-600 border-green-300 w-full sm:w-auto">
+              <Button 
+                onClick={addNewRow} 
+                variant="outline" 
+                className="text-green-600 dark:text-green-400 border-green-300 dark:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 w-full sm:w-auto"
+              >
                 <Plus className="h-4 w-4 ml-2" />
                 إضافة صنف
               </Button>
 
               <div className="text-center sm:text-right">
-                <div className="text-lg font-bold text-green-800">
+                <div className="text-lg font-bold text-green-800 dark:text-green-300">
                   الإجمالي الكلي: {formatCurrencySimple(grandTotal)}
                 </div>
               </div>
@@ -344,10 +353,10 @@ const DailySales = () => {
         </Card>
 
         {/* ملاحظة تحذيرية */}
-        <Card className="mb-6 sm:mb-8 border-yellow-200 bg-yellow-50">
+        <Card className="mb-6 sm:mb-8 border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 shadow-sm transition-colors duration-300">
           <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-yellow-800">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+            <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-300">
+              <div className="w-2 h-2 bg-yellow-500 dark:bg-yellow-400 rounded-full"></div>
               <p className="text-sm">
                 <strong>تنبيه:</strong> تأكد من صحة الكميات المدخلة. سيتم خصم الكميات المباعة من المخزون تلقائياً بعد الحفظ.
               </p>
@@ -361,7 +370,7 @@ const DailySales = () => {
             onClick={handleSaleSubmit}
             disabled={saving}
             size="lg"
-            className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 w-full sm:w-auto"
+            className="bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white px-8 py-3 w-full sm:w-auto shadow-lg dark:shadow-gray-900/25 transition-all duration-200"
           >
             <Save className="h-5 w-5 ml-2" />
             {saving ? 'جارٍ الحفظ...' : 'حفظ عملية البيع'}
