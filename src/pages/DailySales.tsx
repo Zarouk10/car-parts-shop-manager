@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Save, TrendingUp, Calendar } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -214,11 +213,11 @@ const DailySales = () => {
           <CardHeader className="p-4 sm:p-6">
             <CardTitle className="flex items-center gap-2 text-lg sm:text-xl text-green-800 dark:text-green-300">
               <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
-              معلومات الفاتورة
+              البيع اليومي
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <Label htmlFor="saleDate" className="text-gray-700 dark:text-gray-300 font-medium">تاريخ البيع</Label>
                 <Input
@@ -227,14 +226,6 @@ const DailySales = () => {
                   value={saleDate}
                   onChange={(e) => setSaleDate(e.target.value)}
                   className="mt-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-green-500 dark:focus:ring-green-400"
-                />
-              </div>
-              <div>
-                <Label className="text-gray-700 dark:text-gray-300 font-medium">رقم الفاتورة</Label>
-                <Input 
-                  value={`INV-${Date.now()}`} 
-                  disabled 
-                  className="mt-1 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400" 
                 />
               </div>
             </div>
