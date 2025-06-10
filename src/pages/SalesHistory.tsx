@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar } from 'lucide-react';
+import { Calendar, Package, AlertCircle, CheckCircle } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfYear, endOfYear, startOfDay, endOfDay } from 'date-fns';
 
 interface Sale {
@@ -23,16 +24,25 @@ interface Sale {
   }[];
 }
 
+interface SalesReport {
+  totalSales: number;
+  totalProducts: number;
+  totalQuantity: number;
+  productsWithIssues: string[];
+  salesWithMultipleProducts: number;
+}
+
 const SalesHistory = () => {
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'yearly'>('daily');
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date('2025-06-05')); // Set to June 5th for investigation
+  const [salesReport, setSalesReport] = useState<SalesReport | null>(null);
   const { toast } = useToast();
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+    return date.toLocaleDateString('en-CA');
   };
 
   const formatDateTime = (dateString: string) => {
@@ -43,9 +53,54 @@ const SalesHistory = () => {
     })}`;
   };
 
+  const generateSalesReport = (salesData: Sale[]): SalesReport => {
+    console.log('Generating sales report for data:', salesData);
+    
+    let totalProducts = 0;
+    let totalQuantity = 0;
+    let productsWithIssues: string[] = [];
+    let salesWithMultipleProducts = 0;
+
+    salesData.forEach(sale => {
+      console.log(`Sale ${sale.id}:`, {
+        date: sale.sale_date,
+        itemsCount: sale.sale_items.length,
+        items: sale.sale_items
+      });
+
+      if (sale.sale_items.length > 1) {
+        salesWithMultipleProducts++;
+      }
+
+      sale.sale_items.forEach(item => {
+        totalProducts++;
+        totalQuantity += item.quantity;
+        
+        // Check for potential issues
+        if (!item.product?.name || item.product.name === 'منتج غير معروف') {
+          productsWithIssues.push(`Sale ${sale.id}: منتج مفقود أو غير معروف`);
+        }
+        
+        console.log(`Product: ${item.product?.name}, Quantity: ${item.quantity}, Price: ${item.unit_price}`);
+      });
+    });
+
+    const report = {
+      totalSales: salesData.length,
+      totalProducts,
+      totalQuantity,
+      productsWithIssues,
+      salesWithMultipleProducts
+    };
+
+    console.log('Sales Report:', report);
+    return report;
+  };
+
   const fetchSales = async (period: 'daily' | 'weekly' | 'yearly', date: Date) => {
     try {
       setLoading(true);
+      console.log('Fetching sales for:', { period, date: date.toISOString() });
       
       let startDate: Date;
       let endDate: Date;
@@ -68,6 +123,11 @@ const SalesHistory = () => {
           endDate = endOfDay(date);
       }
 
+      console.log('Date range:', { 
+        start: startDate.toISOString().split('T')[0], 
+        end: endDate.toISOString().split('T')[0] 
+      });
+
       const { data, error } = await supabase
         .from('sales')
         .select(`
@@ -89,6 +149,9 @@ const SalesHistory = () => {
         .lte('sale_date', endDate.toISOString().split('T')[0])
         .order('sale_date', { ascending: false });
 
+      console.log('Raw data from Supabase:', data);
+      console.log('Supabase error:', error);
+
       if (error) throw error;
 
       const formattedSales: Sale[] = (data || []).map(sale => ({
@@ -101,7 +164,21 @@ const SalesHistory = () => {
         }))
       }));
 
+      console.log('Formatted sales:', formattedSales);
       setSales(formattedSales);
+      
+      // Generate detailed report
+      const report = generateSalesReport(formattedSales);
+      setSalesReport(report);
+
+      // Show detailed analysis in toast
+      if (formattedSales.length > 0) {
+        toast({
+          title: "تحليل البيانات مكتمل",
+          description: `تم العثور على ${report.totalSales} عملية بيع، ${report.totalProducts} منتج، ${report.salesWithMultipleProducts} عملية بمنتجات متعددة`,
+        });
+      }
+
     } catch (error) {
       console.error('Error fetching sales:', error);
       toast({
@@ -141,10 +218,94 @@ const SalesHistory = () => {
     <div className="container mx-auto px-4 py-8 dark:bg-gray-900 min-h-screen" dir="rtl">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">سجل المبيعات</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">عرض وإدارة سجل المبيعات حسب الفترة المحددة</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">سجل المبيعات - تحليل مفصل</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">مراجعة وتحليل سجل المبيعات مع فحص المنتجات المتعددة</p>
         </div>
       </div>
+
+      {/* Sales Report Summary */}
+      {salesReport && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card className="dark:bg-gray-800/50 dark:border-gray-700">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium dark:text-white">إجمالي المبيعات</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {salesReport.totalSales}
+              </div>
+              <p className="text-xs text-muted-foreground dark:text-gray-400">عملية بيع</p>
+            </CardContent>
+          </Card>
+
+          <Card className="dark:bg-gray-800/50 dark:border-gray-700">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium dark:text-white">إجمالي المنتجات</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                {salesReport.totalProducts}
+              </div>
+              <p className="text-xs text-muted-foreground dark:text-gray-400">منتج مختلف</p>
+            </CardContent>
+          </Card>
+
+          <Card className="dark:bg-gray-800/50 dark:border-gray-700">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium dark:text-white">مبيعات متعددة المنتجات</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                {salesReport.salesWithMultipleProducts}
+              </div>
+              <p className="text-xs text-muted-foreground dark:text-gray-400">عملية بمنتجات متعددة</p>
+            </CardContent>
+          </Card>
+
+          <Card className="dark:bg-gray-800/50 dark:border-gray-700">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium dark:text-white">المشاكل المكتشفة</CardTitle>
+              {salesReport.productsWithIssues.length > 0 ? (
+                <AlertCircle className="h-4 w-4 text-red-500" />
+              ) : (
+                <CheckCircle className="h-4 w-4 text-green-500" />
+              )}
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${salesReport.productsWithIssues.length > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                {salesReport.productsWithIssues.length}
+              </div>
+              <p className="text-xs text-muted-foreground dark:text-gray-400">
+                {salesReport.productsWithIssues.length > 0 ? 'مشكلة مكتشفة' : 'لا توجد مشاكل'}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Issues Report */}
+      {salesReport && salesReport.productsWithIssues.length > 0 && (
+        <Card className="mb-6 border-red-200 dark:border-red-600 bg-red-50 dark:bg-red-900/20">
+          <CardHeader>
+            <CardTitle className="text-red-800 dark:text-red-300 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              المشاكل المكتشفة في البيانات
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {salesReport.productsWithIssues.map((issue, index) => (
+                <li key={index} className="text-red-700 dark:text-red-300 text-sm">
+                  • {issue}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <Card className="dark:bg-gray-800/50 dark:border-gray-700">
@@ -199,7 +360,7 @@ const SalesHistory = () => {
         <CardHeader>
           <CardTitle className="dark:text-white">{getPeriodTitle()}</CardTitle>
           <CardDescription className="dark:text-gray-400">
-            تفاصيل المبيعات للفترة المحددة
+            تفاصيل المبيعات مع عرض مفصل للمنتجات المتعددة
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -217,8 +378,10 @@ const SalesHistory = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="dark:border-gray-700">
+                    <TableHead className="text-right dark:text-gray-300">رقم البيع</TableHead>
                     <TableHead className="text-right dark:text-gray-300">تاريخ البيع</TableHead>
-                    <TableHead className="text-right dark:text-gray-300">المنتجات</TableHead>
+                    <TableHead className="text-right dark:text-gray-300">عدد المنتجات</TableHead>
+                    <TableHead className="text-right dark:text-gray-300">تفاصيل المنتجات</TableHead>
                     <TableHead className="text-right dark:text-gray-300">إجمالي المبلغ</TableHead>
                     <TableHead className="text-right dark:text-gray-300">وقت الإنشاء</TableHead>
                   </TableRow>
@@ -227,13 +390,30 @@ const SalesHistory = () => {
                   {sales.map((sale) => (
                     <TableRow key={sale.id} className="dark:border-gray-700">
                       <TableCell className="font-medium dark:text-white">
+                        <span className="font-mono text-sm bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                          {sale.id.substring(0, 8)}...
+                        </span>
+                      </TableCell>
+                      <TableCell className="font-medium dark:text-white">
                         {formatDate(sale.sale_date)}
                       </TableCell>
+                      <TableCell className="text-center dark:text-gray-300">
+                        <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                          sale.sale_items.length > 1 
+                            ? 'bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300' 
+                            : 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300'
+                        }`}>
+                          {sale.sale_items.length}
+                        </span>
+                      </TableCell>
                       <TableCell className="dark:text-gray-300">
-                        <div className="space-y-1">
-                          {sale.sale_items.map((item) => (
-                            <div key={item.id} className="text-sm">
-                              {item.product.name} - الكمية: {item.quantity} - السعر: {item.unit_price} دينار
+                        <div className="space-y-2">
+                          {sale.sale_items.map((item, index) => (
+                            <div key={item.id} className="text-sm border-l-2 border-gray-200 dark:border-gray-600 pl-3">
+                              <div className="font-medium">{index + 1}. {item.product.name}</div>
+                              <div className="text-gray-600 dark:text-gray-400">
+                                الكمية: {item.quantity} | سعر الوحدة: {item.unit_price} دينار | المجموع: {item.total_price} دينار
+                              </div>
                             </div>
                           ))}
                         </div>
