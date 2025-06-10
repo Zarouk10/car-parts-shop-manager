@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Package, AlertCircle, CheckCircle } from 'lucide-react';
+import { Calendar, Package, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfYear, endOfYear, startOfDay, endOfDay } from 'date-fns';
+import { Button } from '@/components/ui/button';
 
 interface Sale {
   id: string;
@@ -30,13 +31,14 @@ interface SalesReport {
   totalQuantity: number;
   productsWithIssues: string[];
   salesWithMultipleProducts: number;
+  emptySalesItems: number;
 }
 
 const SalesHistory = () => {
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'yearly'>('daily');
-  const [selectedDate, setSelectedDate] = useState(new Date('2025-06-05')); // Set to June 5th for investigation
+  const [selectedDate, setSelectedDate] = useState(new Date('2025-06-05'));
   const [salesReport, setSalesReport] = useState<SalesReport | null>(null);
   const { toast } = useToast();
 
@@ -54,34 +56,52 @@ const SalesHistory = () => {
   };
 
   const generateSalesReport = (salesData: Sale[]): SalesReport => {
-    console.log('Generating sales report for data:', salesData);
+    console.log('🔍 Generating detailed sales report for data:', salesData);
     
     let totalProducts = 0;
     let totalQuantity = 0;
     let productsWithIssues: string[] = [];
     let salesWithMultipleProducts = 0;
+    let emptySalesItems = 0;
 
     salesData.forEach(sale => {
-      console.log(`Sale ${sale.id}:`, {
+      console.log(`📊 Sale Analysis ${sale.id}:`, {
         date: sale.sale_date,
-        itemsCount: sale.sale_items.length,
-        items: sale.sale_items
+        total_amount: sale.total_amount,
+        itemsCount: sale.sale_items?.length || 0,
+        items: sale.sale_items || []
       });
+
+      // تحقق من وجود sale_items
+      if (!sale.sale_items || sale.sale_items.length === 0) {
+        emptySalesItems++;
+        productsWithIssues.push(`Sale ${sale.id.substring(0, 8)}: لا توجد تفاصيل منتجات (sale_items فارغة)`);
+        return;
+      }
 
       if (sale.sale_items.length > 1) {
         salesWithMultipleProducts++;
       }
 
-      sale.sale_items.forEach(item => {
+      sale.sale_items.forEach((item, index) => {
         totalProducts++;
-        totalQuantity += item.quantity;
+        totalQuantity += item.quantity || 0;
+        
+        console.log(`🏷️ Product ${index + 1}:`, {
+          name: item.product?.name,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price
+        });
         
         // Check for potential issues
         if (!item.product?.name || item.product.name === 'منتج غير معروف') {
-          productsWithIssues.push(`Sale ${sale.id}: منتج مفقود أو غير معروف`);
+          productsWithIssues.push(`Sale ${sale.id.substring(0, 8)}: منتج مفقود أو غير معروف`);
         }
         
-        console.log(`Product: ${item.product?.name}, Quantity: ${item.quantity}, Price: ${item.unit_price}`);
+        if (!item.quantity || item.quantity <= 0) {
+          productsWithIssues.push(`Sale ${sale.id.substring(0, 8)}: كمية غير صحيحة للمنتج ${item.product?.name || 'غير معروف'}`);
+        }
       });
     });
 
@@ -90,17 +110,18 @@ const SalesHistory = () => {
       totalProducts,
       totalQuantity,
       productsWithIssues,
-      salesWithMultipleProducts
+      salesWithMultipleProducts,
+      emptySalesItems
     };
 
-    console.log('Sales Report:', report);
+    console.log('📈 Final Sales Report:', report);
     return report;
   };
 
   const fetchSales = async (period: 'daily' | 'weekly' | 'yearly', date: Date) => {
     try {
       setLoading(true);
-      console.log('Fetching sales for:', { period, date: date.toISOString() });
+      console.log('🚀 Fetching sales for:', { period, date: date.toISOString() });
       
       let startDate: Date;
       let endDate: Date;
@@ -123,11 +144,12 @@ const SalesHistory = () => {
           endDate = endOfDay(date);
       }
 
-      console.log('Date range:', { 
+      console.log('📅 Date range:', { 
         start: startDate.toISOString().split('T')[0], 
         end: endDate.toISOString().split('T')[0] 
       });
 
+      // استعلام محسن مع تشخيص أفضل
       const { data, error } = await supabase
         .from('sales')
         .select(`
@@ -135,13 +157,16 @@ const SalesHistory = () => {
           sale_date,
           total_amount,
           created_at,
-          sale_items (
+          sale_items!inner (
             id,
             quantity,
             unit_price,
             total_price,
-            products (
-              name
+            product_id,
+            products!inner (
+              id,
+              name,
+              category
             )
           )
         `)
@@ -149,22 +174,30 @@ const SalesHistory = () => {
         .lte('sale_date', endDate.toISOString().split('T')[0])
         .order('sale_date', { ascending: false });
 
-      console.log('Raw data from Supabase:', data);
-      console.log('Supabase error:', error);
+      console.log('🔍 Raw data from Supabase:', data);
+      console.log('❌ Supabase error:', error);
 
-      if (error) throw error;
+      if (error) {
+        console.error('💥 Supabase query error:', error);
+        throw error;
+      }
 
-      const formattedSales: Sale[] = (data || []).map(sale => ({
-        ...sale,
-        sale_items: sale.sale_items.map(item => ({
-          ...item,
-          product: {
-            name: item.products?.name || 'منتج غير معروف'
-          }
-        }))
-      }));
+      // معالجة البيانات المستردة
+      const formattedSales: Sale[] = (data || []).map(sale => {
+        console.log('🔄 Processing sale:', sale.id, 'with items:', sale.sale_items);
+        
+        return {
+          ...sale,
+          sale_items: (sale.sale_items || []).map(item => ({
+            ...item,
+            product: {
+              name: item.products?.name || 'منتج غير معروف'
+            }
+          }))
+        };
+      });
 
-      console.log('Formatted sales:', formattedSales);
+      console.log('✅ Formatted sales:', formattedSales);
       setSales(formattedSales);
       
       // Generate detailed report
@@ -174,16 +207,22 @@ const SalesHistory = () => {
       // Show detailed analysis in toast
       if (formattedSales.length > 0) {
         toast({
-          title: "تحليل البيانات مكتمل",
-          description: `تم العثور على ${report.totalSales} عملية بيع، ${report.totalProducts} منتج، ${report.salesWithMultipleProducts} عملية بمنتجات متعددة`,
+          title: "تم تحليل البيانات",
+          description: `${report.totalSales} مبيعة، ${report.totalProducts} منتج، ${report.emptySalesItems} مبيعة بدون تفاصيل`,
+        });
+      } else {
+        toast({
+          title: "لا توجد مبيعات",
+          description: "لم يتم العثور على مبيعات في هذه الفترة",
+          variant: "destructive",
         });
       }
 
     } catch (error) {
-      console.error('Error fetching sales:', error);
+      console.error('💥 Error fetching sales:', error);
       toast({
         title: "خطأ في جلب البيانات",
-        description: "حدث خطأ أثناء جلب سجل المبيعات",
+        description: "حدث خطأ أثناء جلب سجل المبيعات: " + (error as Error).message,
         variant: "destructive",
       });
     } finally {
@@ -218,14 +257,22 @@ const SalesHistory = () => {
     <div className="container mx-auto px-4 py-8 dark:bg-gray-900 min-h-screen" dir="rtl">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">سجل المبيعات - تحليل مفصل</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">مراجعة وتحليل سجل المبيعات مع فحص المنتجات المتعددة</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">سجل المبيعات - تحليل شامل</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">مراجعة وتحليل تفصيلي لسجل المبيعات</p>
         </div>
+        <Button 
+          onClick={() => fetchSales(selectedPeriod, selectedDate)}
+          variant="outline"
+          className="dark:border-gray-600 dark:text-white"
+        >
+          <RefreshCw className="h-4 w-4 ml-2" />
+          إعادة تحميل
+        </Button>
       </div>
 
       {/* Sales Report Summary */}
       {salesReport && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <Card className="dark:bg-gray-800/50 dark:border-gray-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium dark:text-white">إجمالي المبيعات</CardTitle>
@@ -254,14 +301,27 @@ const SalesHistory = () => {
 
           <Card className="dark:bg-gray-800/50 dark:border-gray-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium dark:text-white">مبيعات متعددة المنتجات</CardTitle>
+              <CardTitle className="text-sm font-medium dark:text-white">الكمية الإجمالية</CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                {salesReport.salesWithMultipleProducts}
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                {salesReport.totalQuantity}
               </div>
-              <p className="text-xs text-muted-foreground dark:text-gray-400">عملية بمنتجات متعددة</p>
+              <p className="text-xs text-muted-foreground dark:text-gray-400">قطعة</p>
+            </CardContent>
+          </Card>
+
+          <Card className="dark:bg-gray-800/50 dark:border-gray-700">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium dark:text-white">مبيعات فارغة</CardTitle>
+              <AlertCircle className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                {salesReport.emptySalesItems}
+              </div>
+              <p className="text-xs text-muted-foreground dark:text-gray-400">بدون تفاصيل</p>
             </CardContent>
           </Card>
 
@@ -360,18 +420,20 @@ const SalesHistory = () => {
         <CardHeader>
           <CardTitle className="dark:text-white">{getPeriodTitle()}</CardTitle>
           <CardDescription className="dark:text-gray-400">
-            تفاصيل المبيعات مع عرض مفصل للمنتجات المتعددة
+            تفاصيل المبيعات مع عرض شامل للمنتجات والكميات
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">جاري تحميل البيانات...</p>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">جاري تحميل وتحليل البيانات...</p>
             </div>
           ) : sales.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-600 dark:text-gray-400">لا توجد مبيعات في هذه الفترة</p>
+              <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+              <p className="text-gray-600 dark:text-gray-400 text-lg font-medium">لا توجد مبيعات في هذه الفترة</p>
+              <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">جرب اختيار تاريخ آخر أو فترة زمنية مختلفة</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -381,7 +443,7 @@ const SalesHistory = () => {
                     <TableHead className="text-right dark:text-gray-300">رقم البيع</TableHead>
                     <TableHead className="text-right dark:text-gray-300">تاريخ البيع</TableHead>
                     <TableHead className="text-right dark:text-gray-300">عدد المنتجات</TableHead>
-                    <TableHead className="text-right dark:text-gray-300">تفاصيل المنتجات</TableHead>
+                    <TableHead className="text-right dark:text-gray-300">تفاصيل المنتجات والكميات</TableHead>
                     <TableHead className="text-right dark:text-gray-300">إجمالي المبلغ</TableHead>
                     <TableHead className="text-right dark:text-gray-300">وقت الإنشاء</TableHead>
                   </TableRow>
@@ -398,25 +460,44 @@ const SalesHistory = () => {
                         {formatDate(sale.sale_date)}
                       </TableCell>
                       <TableCell className="text-center dark:text-gray-300">
-                        <span className={`px-2 py-1 rounded-full text-sm font-medium ${
-                          sale.sale_items.length > 1 
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          sale.sale_items.length === 0 
+                            ? 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300' 
+                            : sale.sale_items.length > 1 
                             ? 'bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300' 
                             : 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300'
                         }`}>
                           {sale.sale_items.length}
+                          {sale.sale_items.length === 0 && ' ⚠️'}
                         </span>
                       </TableCell>
                       <TableCell className="dark:text-gray-300">
-                        <div className="space-y-2">
-                          {sale.sale_items.map((item, index) => (
-                            <div key={item.id} className="text-sm border-l-2 border-gray-200 dark:border-gray-600 pl-3">
-                              <div className="font-medium">{index + 1}. {item.product.name}</div>
-                              <div className="text-gray-600 dark:text-gray-400">
-                                الكمية: {item.quantity} | سعر الوحدة: {item.unit_price} دينار | المجموع: {item.total_price} دينار
+                        {sale.sale_items.length === 0 ? (
+                          <div className="text-red-600 dark:text-red-400 font-medium">
+                            ⚠️ لا توجد تفاصيل منتجات لهذه المبيعة
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {sale.sale_items.map((item, index) => (
+                              <div key={item.id} className="text-sm border-r-2 border-blue-200 dark:border-blue-600 pr-3 bg-gray-50 dark:bg-gray-800/30 p-2 rounded">
+                                <div className="font-medium text-blue-900 dark:text-blue-300">
+                                  {index + 1}. {item.product.name}
+                                </div>
+                                <div className="text-gray-600 dark:text-gray-400 mt-1">
+                                  <span className="inline-block bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded text-xs ml-1">
+                                    الكمية: {item.quantity}
+                                  </span>
+                                  <span className="inline-block bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 px-2 py-1 rounded text-xs ml-1">
+                                    سعر الوحدة: {item.unit_price} دينار
+                                  </span>
+                                  <span className="inline-block bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-2 py-1 rounded text-xs">
+                                    المجموع: {item.total_price} دينار
+                                  </span>
+                                </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="font-bold text-green-600 dark:text-green-400">
                         {sale.total_amount.toLocaleString()} دينار
